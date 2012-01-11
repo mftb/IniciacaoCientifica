@@ -4,34 +4,40 @@ import os,sys,urllib,yaml,shutil,subprocess
 
 ##=====COMMANDS FUNCTIONS=====##
 
+
 ##=====listrepo=====##
 #This function access the content of the file
 #"content.arp" in the repo and print the structure
 #of the componet that there are in the repo.
+# FIXME - NEED TRY/EXCEPT
+# FIXED - added try/except block
 def listrepo(): # online shit / I guess I undestood this shit
 	file_url = repo_url + "content.arp" # fucking repo_url is hardcoded, but is little what we can do in this situation
 	# so, content.arp is an YAML
 	print "Trying to access \'" + file_url + "\'..."
+	try:
+		# the contents of the repo are listed in the YAML
+		# so, the repo contents are kinda displayed offline	
+		file = urllib.urlopen(file_url)
+		content = file.read()
+		file.close()
+
+		yaml_obj = {} # dictionary
+		yaml_obj = yaml.load(content)
+		# as structure being hardcoded, there is a tight relation between the local stuff and the repo, they use the same file structure
+		# this shit works kinda link list(), but reading the repo YAML
+		for x in structure:
+			print x.upper() + ":"
+			if yaml_obj[x] != None:
+				for y in sorted(yaml_obj[x].iterkeys()): # why this shit must be sorted?
+					print "  " + y + ": " + yaml_obj[x][y]
+				print ""
+			else:
+				print ""
+	except:
+		print "!!! Error: Could not access the repository."
+		sys.exit(1)
 	
-	# the contents of the repo are listed in the YAML
-	# so, the repo contents are kinda displayed offline	
-	file = urllib.urlopen(file_url)
-	content = file.read()
-	file.close()
-
-	yaml_obj = {} # dictionary
-	yaml_obj = yaml.load(content)
-	# as structure being hardcoded, there is a tight relation between the local stuff and the repo, they use the same file structure
-	# this shit works kinda link list(), but reading the repo YAML
-	for x in structure:
-		print x.upper() + ":"
-		if yaml_obj[x] != None:
-			for y in sorted(yaml_obj[x].iterkeys()): # why this shit must be sorted?
-				print "  " + y + ": " + yaml_obj[x][y]
-			print ""
-		else:
-			print ""
-
 ##=====list=====##
 #This function list the structure of local components
 def	list(): # I guess I understood this shit
@@ -51,15 +57,28 @@ def	list(): # I guess I understood this shit
 #if t find, the function dowanload the component package
 #and unpack it.
 #if not, returns error.
+# FIXME
 def get(type, name): # online shit / I guess I understood this shit
-	# I still don't understand why this guy insists on the fucking type of the component -- isn't the fucking name a primary key?
+	# smart way to do the stuff
 	if type != None:
 		list = []
 		list.append(type)
-		# gets the fucking component
-		component = findRepoComponent(name, list)
 	else:
-		component = findRepoComponent(name, structure)
+		# copies the structure itself, not the reference to it (safer)
+		# there's a other way to do this: list = list(structure), but unused becuase the list object overlaps the builtin function list
+		list = structure[:]
+	# bulletproof
+	try:
+		component = findRepoComponent(name, list)
+	# FIXME: check this shit for other errors that aren't a bad component type or web issues
+	# bad component type
+	except KeyError:
+		print "!!! Error: invalid component type."
+		sys.exit(1)
+	# if not connected to the web
+	except:
+		print "!!! Error: could not access the repository."
+		sys.exit(1)
 	# "component" is a string
 	if component != None:
 		# my guess is this shit - "target" - is the fucking component .arppack URL
@@ -87,6 +106,8 @@ def put(type, name): # online shit / trivial shit
 ##=====pack=====##
 #This function pack the component or platfomrs.
 #It compress all files in a arppack file.
+# FIXME - NEED TRY/EXCEPT
+# ALMOST FIXED - try/except block added, need attention on the tarball generation
 def pack(type, name): # I guess I understood this shit
     # my initial hunch is that this function gets all the components you have on your arp local package
 	source_files = ""
@@ -117,14 +138,20 @@ def pack(type, name): # I guess I understood this shit
 		# this works just like the elif above
 		list = []
 		list.append(type)
-		component = findLocalComponent(name, list)
+		# bulletproof
+		try:
+			component = findLocalComponent(name, list)
+		except:
+			print "!!! Error: invalid component type."
+			sys.exit(1)
+			
 		if component != None:
 			source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
 			package_file = component.split("/")[-3] + "/" + name + ".arppack"
 		else:
 			print "!!! Error: Component " + name + " not found"
 			sys.exit(1)
-
+	# FIXME: point of interest, do research about errors on tar(1) 
 	print "Packing " + package_file + "..."
 	cmd = "tar -czf " + package_file + " " + source_files # creates .arppack file package_file from source_files using zip compression
 	p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
@@ -132,14 +159,16 @@ def pack(type, name): # I guess I understood this shit
 
 ##=====unpack=====##
 #This function unpack the component package
+# FIXME: attention on the tarball generation
 def unpack(package): # I guess I understood this shit
     if not os.path.exists(package):
 		print "!!! Error: Package " + package + " doesn't exists."
 		sys.exit(1)
     else:
     	# this shit is the anti-pack
+    	# FIXME: point of interest, do research about errors on tar(1) 
 		print "Unpacking " + package + " ..."
-		cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m) 
+		cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m)
 		p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
 		print "Done." 
 
@@ -148,15 +177,21 @@ def unpack(package): # I guess I understood this shit
 #if exist a local copy of the template component
 #the functions copy it with the new name,
 #if not, the function try to get in the repo.
+# FIXME - NEED TRY/EXCEPT
+# FIXED - try/except block added
 def create(type, name): # calls get, so this shit is online / I guess I undertood how this works - at least from the inside - but the result isn't obvious to me
 	# might need online testing
 	# there is a need to already be a fucking template in the local repo, otherwise, it will search it online
 	# so, the template is a fucking dir tree?
 	list = []
 	list.append(type) # there is a REAL need here for the type
-	component = findLocalComponent("template", list)
-	print component
-	
+	# bulletproof
+	try:
+		component = findLocalComponent("template", list)
+		print component
+	except:
+		print "!!! Error: invalid component type."
+		sys.exit(1)
 	if component != None:
 		target = os.getcwd() + "/" + type + "/"
 		try:
@@ -168,6 +203,7 @@ def create(type, name): # calls get, so this shit is online / I guess I undertoo
 	else:
 		# here is where it will look for the template so it can be downloaded and unpacked in the local repo
 		get(type, "template")
+
 
 ##=====start=====##
 #This function download the start.package
@@ -271,7 +307,6 @@ def findLocalComponent(name, list): # I guess I understood this shit
 def findRepoComponent(name, list): # online shit / I guess I understood this shit
 	# this shit works just like findLocalComponent when seen from the outside, but reads the fucking repo yaml file and searches it
 	file_url = repo_url + "content.arp"
-
 	file = urllib.urlopen(file_url)
 	content = file.read()
 	file.close()
@@ -288,6 +323,8 @@ def findRepoComponent(name, list): # online shit / I guess I understood this shi
 				return repo_url + x + "/" + name + ".arppack"
 	return None
 
+		
+		
 ##=====DEFINES=====##
 # a.k.a. FUCKING HARDCODED SHIT
 
