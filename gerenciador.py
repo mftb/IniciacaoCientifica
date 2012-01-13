@@ -107,7 +107,7 @@ def put(type, name): # online shit / trivial shit
 #This function pack the component or platfomrs.
 #It compress all files in a arppack file.
 # FIXME - NEED TRY/EXCEPT
-# ALMOST FIXED - try/except block added, need attention on the tarball generation
+# FIXED - try/except block added
 def pack(type, name): # I guess I understood this shit
     # my initial hunch is that this function gets all the components you have on your arp local package
 	source_files = ""
@@ -151,26 +151,35 @@ def pack(type, name): # I guess I understood this shit
 		else:
 			print "!!! Error: Component " + name + " not found"
 			sys.exit(1)
-	# FIXME: point of interest, do research about errors on tar(1) 
+			
 	print "Packing " + package_file + "..."
 	cmd = "tar -czf " + package_file + " " + source_files # creates .arppack file package_file from source_files using zip compression
-	p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
-	print "Done."
-
+	try:
+		p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
+		print "Done."
+	except:
+		print "!!! Error: unable to pack, please try again."
+		sys.exit(1)
+		
+		
 ##=====unpack=====##
 #This function unpack the component package
-# FIXME: attention on the tarball generation
+# FIXME
 def unpack(package): # I guess I understood this shit
     if not os.path.exists(package):
 		print "!!! Error: Package " + package + " doesn't exists."
 		sys.exit(1)
     else:
     	# this shit is the anti-pack
-    	# FIXME: point of interest, do research about errors on tar(1) 
 		print "Unpacking " + package + " ..."
 		cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m)
-		p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
-		print "Done." 
+		try:
+			p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
+			print "Done." 
+		except:
+			print "!!! Error: unable to unpack, please try again."
+			sys.exit(1)
+
 
 ##=====create=====##
 #This function create the component specified
@@ -329,7 +338,9 @@ def findRepoComponent(name, list): # online shit / I guess I understood this shi
 # a.k.a. FUCKING HARDCODED SHIT
 
 ##=====repo location=====#
-repo_url = "http://www.students.ic.unicamp.br/~ra063091/repo/"
+#repo_url = "http://www.students.ic.unicamp.br/~ra063091/repo/"
+repo_url = "http://www.students.ic.unicamp.br/~ra103501/arp_repo/"
+
 
 ##=====list of supported commands=====#
 commands={ # fucking dictionary -- the key is the short action and the value is the action itself
