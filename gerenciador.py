@@ -109,15 +109,15 @@ def put(type, name): # online shit / trivial shit
 # FIXME - NEED TRY/EXCEPT
 # FIXED - try/except block added
 def pack(type, name): # I guess I understood this shit
-    # my initial hunch is that this function gets all the components you have on your arp local package
+	# my initial hunch is that this function gets all the components you have on your arp local package
 	source_files = ""
 	if type == None and name == None:
 		# this if is to get ALL the stuff
 		localpath = os.getcwd()
 		# walks in the file system getting each source file
 		for x in structure:
-		    # note that localpath is kinda the same, but x alters itself on each iteration, being each one of the contents of the list structure
-		    # I noticed that the list structure is kinda the base of all this shit
+			# note that localpath is kinda the same, but x alters itself on each iteration, being each one of the contents of the list structure
+			# I noticed that the list structure is kinda the base of all this shit
 			mypath = localpath + "/" + x + "/"
 			if os.path.exists(mypath):
 				source_files = source_files + x + "/ "
@@ -166,11 +166,11 @@ def pack(type, name): # I guess I understood this shit
 #This function unpack the component package
 # FIXME
 def unpack(package): # I guess I understood this shit
-    if not os.path.exists(package):
+	if not os.path.exists(package):
 		print "!!! Error: Package " + package + " doesn't exists."
 		sys.exit(1)
-    else:
-    	# this shit is the anti-pack
+	else:
+		# this shit is the anti-pack
 		print "Unpacking " + package + " ..."
 		cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m)
 		try:
