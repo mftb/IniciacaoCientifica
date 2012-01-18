@@ -7,7 +7,7 @@ import os,sys,urllib,yaml,shutil,subprocess
 ##=====COMMANDS FUNCTIONS=====##
 
 
-##=====listrepo=====##
+##=====ListRepo=====##
 #This function access the content of the file
 #"content.arp" in the repo and print the structure
 #of the componet that there are in the repo.
@@ -40,7 +40,7 @@ def ListRepo(): # online shit / I guess I undestood this shit
 		print "!!! Error: Could not access the repository."
 		sys.exit(1)
 	
-##=====list=====##
+##=====List=====##
 #This function list the structure of local components
 def	List(): # I guess I understood this shit
 	localpath = os.getcwd()
@@ -54,7 +54,7 @@ def	List(): # I guess I understood this shit
 					print " ", y, "-", getDescriptionText(mypath + "/" + y)
 		print ""
 
-##=====get=====##
+##=====Get=====##
 #This function try to get the component from the repo
 #if t find, the function dowanload the component package
 #and unpack it.
@@ -99,13 +99,13 @@ def Get(type, name): # online shit / I guess I understood this shit
 	# after downloading, extracts the stuff; target + fileName is the fucking path of the downloaded .arppack
 	Unpack(target + fileName)
 
-##=====put=====##
+##=====Put=====##
 #This function was not implemented.
 def Put(type, name): # online shit / trivial shit
 	print "Sorry!! Function not yet implemented."
 	sys.exit(0)
 
-##=====pack=====##
+##=====Pack=====##
 #This function pack the component or platfomrs.
 #It compress all files in a arppack file.
 # FIXME - NEED TRY/EXCEPT
@@ -165,7 +165,7 @@ def Pack(type, name): # I guess I understood this shit
 		sys.exit(1)
 		
 		
-##=====unpack=====##
+##=====Unpack=====##
 #This function unpack the component package
 # FIXME
 # seems fixed
@@ -186,7 +186,7 @@ def Unpack(package): # I guess I understood this shit
 			sys.exit(1)
 
 
-##=====create=====##
+##=====Create=====##
 #This function create the component specified
 #if exist a local copy of the template component
 #the functions copy it with the new name,
@@ -219,7 +219,7 @@ def Create(type, name): # calls get, so this shit is online / I guess I undertoo
 		Get(type, "template")
 
 
-##=====start=====##
+##=====Start=====##
 #This function download the start.package
 #and unpack it. This File has the structure of dir
 #and the main Makefile.
@@ -236,7 +236,7 @@ def Start(): # online shit / I guess I understood this shit
 	Unpack(target + fileName)
 	print "The main structure was created successfully."
 
-##=====repo=====##
+##=====Repo=====##
 #This function creates the "content.arp" file.
 #The function gets all components in the local structure
 #and put it in a YAML file.
@@ -255,7 +255,7 @@ def Repo(): # I guess I understood this shit
 	f.close()
 	print "The file 'content.arp' was created successfully."
 
-##=====help=====##
+##=====Help=====##
 #This function shows the help contents.
 def Help(): # trivial shit
 	print """
@@ -337,17 +337,40 @@ def findRepoComponent(name, lst): # online shit / I guess I understood this shit
 				return repo_url + x + "/" + name + ".arppack"
 	return None
 
-		
-		
+
+##=====smartGetRepo=====##
+#This function gets the appropriate repo URL 
+#and generates the repo.cfg file, which can
+#be edited to add alternative repos
+def smartGetRepo():
+	hardcoded_repo_url = "http://www.students.ic.unicamp.br/~ra103501/arp_repo/" # Matheus Boy
+	# hardcoded_repo_url = "http://www.students.ic.unicamp.br/~ra063091/repo/" - Matheus Nagliati
+	# not satisfied with this "test"
+	# something like file.exists() would be much more elegant than this try/except
+	try:
+		f = open("repo.cfg","r")
+		repo_str = f.read()
+		f.close()
+		repo_list = repo_str.split("\n")
+		for repo in repo_list:
+			a = urllib.urlopen(repo + "content.arp")
+			b = a.getcode()
+			a.close()
+			if b == 200:
+				return repo			
+	# if there is no config file, creates it
+	except:
+		f = open("repo.cfg","w")
+		f.write(hardcoded_repo_url)
+		f.close()
+		print "Repo config file created"
+		return hardcoded_repo_url
+
 ##=====DEFINES=====##
 # a.k.a. FUCKING HARDCODED SHIT
 
 ##=====repo location=====#
-
-# here will come the goddman "factory method" for selecting the appropriate repo
-
-#repo_url = "http://www.students.ic.unicamp.br/~ra063091/repo/"
-repo_url = "http://www.students.ic.unicamp.br/~ra103501/arp_repo/"
+repo_url = smartGetRepo()
 
 
 ##=====list of supported commands=====#
@@ -362,6 +385,7 @@ structure = ["platforms", "processors", "ip", "is", "sw", "wrappers"]
 
 
 # here begins the magic... and I guess I undertood it
+
 execline = [] # this shit is an "shortcut" to the fucking action itself -- line... would it be a queue (FIFO)?
 #get cmdline args
 cmdline=sys.argv[1:] # my guess is here where the arguments are caught (this remark is redundant due to the original developer remark above)
