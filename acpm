@@ -357,7 +357,9 @@ def smartGetRepo():
 			b = a.getcode()
 			a.close()
 			if b == 200:
-				return repo			
+				return repo
+		# if there isn't a available repo in the repo.cfg, returns the default
+		return hardcoded_repo_url
 	# if there is no config file, creates it
 	except:
 		f = open("repo.cfg","w")
