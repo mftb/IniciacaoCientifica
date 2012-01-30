@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os,sys,urllib,yaml,shutil,subprocess
+import os, sys, urllib, yaml, shutil, subprocess, zipfile
 
 # notice that this shit requires a connection to the web in order to properly work
 
@@ -27,7 +27,9 @@ def ListRepo(): # online shit / I guess I undestood this shit
         yaml_obj = {} # dictionary
         yaml_obj = yaml.load(content)
         # as structure being hardcoded, there is a tight relation between the local stuff and the repo, they use the same file structure
-        # this shit works kinda link list(), but reading the repo YAML
+        # this shit works kinda like list(), but reading the repo YAML
+        #print yaml_obj
+        #sys.exit(1)
         for x in structure:
             print x.upper() + ":"
             if yaml_obj[x] != None:
@@ -113,6 +115,7 @@ def Put(type, name): # online shit / trivial shit
 def Pack(type, name): # I guess I understood this shit
     # my initial hunch is that this function gets all the components you have on your arp local package
     source_files = ""
+    component = ""
     if type == None and name == None:
         # this if is to get ALL the stuff
         localpath = os.getcwd()
@@ -153,7 +156,10 @@ def Pack(type, name): # I guess I understood this shit
         else:
             print "!!! Error: Component " + name + " not found"
             sys.exit(1)
-            
+    print component
+    print source_files
+    print package_file
+    sys.exit(1)
     print "Packing " + package_file + "..."
     cmd = "tar -czf " + package_file + " " + source_files # creates .arppack file package_file from source_files using zip compression
     # bulletproof
@@ -163,12 +169,13 @@ def Pack(type, name): # I guess I understood this shit
     except:
         print "!!! Error: unable to pack, please try again."
         sys.exit(1)
-        
-        
+
+
+
 ##=====Unpack=====##
 #This function unpack the component package
 # FIXME
-# seems fixed
+# try/except block added, and using zipfile to extract the file
 def Unpack(package): # I guess I understood this shit
     if not os.path.exists(package):
         print "!!! Error: Package " + package + " doesn't exists."
@@ -176,11 +183,14 @@ def Unpack(package): # I guess I understood this shit
     else:
         # this shit is the anti-pack
         print "Unpacking " + package + " ..."
-        cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m)
+        #cmd = "tar -xzmf " + package # extracts .arppack file package using zip compression and keeps the ultimate updated file (-m)
         # bulletproof
         try:
-            p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
-            print "Done." 
+            z = zipfile.ZipFile(package,"a")
+            z.extractall()
+            #p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
+            z.close()
+            print "Done."
         except:
             print "!!! Error: unable to unpack, please try again."
             sys.exit(1)
@@ -360,7 +370,6 @@ def smartGetRepo():
                 a = urllib.urlopen(repo + "content.arp")
                 b = a.getcode()
                 a.close()
-                print b, repo
                 if b == 200:
                     return repo
         except:
