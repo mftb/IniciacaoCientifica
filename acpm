@@ -127,7 +127,8 @@ def Pack(type, name): # I guess I understood this shit
             if os.path.exists(mypath):
                 source_files = source_files + x + "/ "
         # my hunch is that, in the end, source_files = "platforms/ processors/ ip/ is/ sw/ wrappers/ Makefile"
-        source_files = source_files + "Makefile"
+        source_files = source_files.split()
+        source_files.append("Makefile")
         package_file = "all.arppack"
         
     elif type == None and name != None: # None must be the NULL of python
@@ -135,6 +136,7 @@ def Pack(type, name): # I guess I understood this shit
         component = findLocalComponent(name, structure)
         if component != None:
             source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
+            source_files = [source_files]
             package_file = component.split("/")[-3] + "/" + name + ".arppack"
         else:
             print "!!! Error: Component " + name + " not found"
@@ -152,19 +154,22 @@ def Pack(type, name): # I guess I understood this shit
             
         if component != None:
             source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
+            source_files = [source_files]
             package_file = component.split("/")[-3] + "/" + name + ".arppack"
         else:
             print "!!! Error: Component " + name + " not found"
             sys.exit(1)
-    print component
-    print source_files
-    print package_file
-    sys.exit(1)
+    #print component
+    #print source_files
+    #print package_file
+    #sys.exit(1)
     print "Packing " + package_file + "..."
-    cmd = "tar -czf " + package_file + " " + source_files # creates .arppack file package_file from source_files using zip compression
+    #cmd = "tar -czf " + package_file + " " + source_files # creates .arppack file package_file from source_files using zip compression
     # bulletproof
     try:
-        p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
+        utilities = ZipUtilities()
+        utilities.toZip(source_files,package_file)
+        #p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
         print "Done."
     except:
         print "!!! Error: unable to pack, please try again."
@@ -382,6 +387,31 @@ def smartGetRepo():
         f.close()
         print "Repo config file created"
         return hardcoded_repo_url
+
+##=====AUX CLASS=====##
+# TODO: properly document this shit
+# this shit adds a fucking folder to a zip file
+class ZipUtilities:
+    # this stuff now takes a list as arg
+    def toZip(self, files_to_zip, filename):
+        zip_file = zipfile.ZipFile(filename, "w")
+        for file_to_zip in files_to_zip:
+            if os.path.isfile(file_to_zip):
+                zip_file.write(file_to_zip)
+            else:
+                self.addFolderToZip(zip_file, file_to_zip)
+        zip_file.close()
+
+    def addFolderToZip(self, zip_file, folder): 
+        for file_ in os.listdir(folder):
+            full_path = os.path.join(folder, file_)
+            if os.path.isfile(full_path):
+                #print "File added: " + str(full_path)
+                zip_file.write(full_path)
+            elif os.path.isdir(full_path):
+                #print "Entering folder: " + str(full_path)
+                self.addFolderToZip(zip_file, full_path)
+
 
 ##=====DEFINES=====##
 # a.k.a. FUCKING HARDCODED SHIT
