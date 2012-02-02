@@ -25,15 +25,14 @@ def ListRepo(): # online shit / I guess I undestood this shit
         f.close()
 
         yaml_obj = {} # dictionary
-        yaml_obj = yaml.load(content)
+        # now we are going to replace the YAML library usage with our own parser
+        yaml_obj = loadYAML(content)
         # as structure being hardcoded, there is a tight relation between the local stuff and the repo, they use the same file structure
         # this shit works kinda like list(), but reading the repo YAML
-        #print yaml_obj
-        #sys.exit(1)
         for x in structure:
             print x.upper() + ":"
             if yaml_obj[x] != None:
-                for y in sorted(yaml_obj[x].iterkeys()): # why this shit must be sorted?
+                for y in sorted(yaml_obj[x].iterkeys()): # why this shit must be sorted? it is sorted for an homogeneous key display
                     print "  " + y + ": " + yaml_obj[x][y]
                 print ""
             else:
@@ -140,7 +139,7 @@ def Pack(type, name): # I guess I understood this shit
             package_file = component.split("/")[-3] + "/" + name + ".arppack"
         else:
             print "!!! Error: Component " + name + " not found"
-            sys.exit(1) # interesting, might be as same as raise SystemExit
+            sys.exit(1) # interesting, might be as same as raise SystemExit --> nope, SystemExit == sys.exit(0)
     else:
         # this works just like the elif above
         lst = []
@@ -249,6 +248,8 @@ def Start(): # online shit / I guess I understood this shit
         sys.exit(1)
     # ...and unpacks it
     Unpack(target + fileName)
+    for folder in structure:
+        os.mkdir(folder)
     print "The main structure was created successfully."
 
 ##=====Repo=====##
@@ -273,7 +274,7 @@ def Repo(): # I guess I understood this shit
 ##=====Help=====##
 #This function shows the help contents.
 def Help(): # trivial shit
-    print """
+    print """ 
   -c,  --create              create
   -g,  --get                 get
   -h,  --help                help
@@ -341,7 +342,7 @@ def findRepoComponent(name, lst): # online shit / I guess I understood this shit
     f.close()
     # here "content" is the fucking yaml
     yaml_obj = {}
-    yaml_obj = yaml.load(content)
+    yaml_obj = loadYAML(content)
     
     compName = name.split(".")[0]
     
@@ -383,12 +384,42 @@ def smartGetRepo():
     # if there is no config file, creates it
     except:
         f = open("repo.cfg","w")
-        f.write(hardcoded_repo_url)
+        f.write(hardcoded_repo_url+"\n")
         f.close()
         print "Repo config file created"
         return hardcoded_repo_url
 
+
+##=====loadYAML=====##
+# TODO: properly document this shit
+def loadYAML(content):
+    dic = {}
+    superiorLevel = ''
+    content = content.split("\n")
+    # builds the dictionary
+    for line in content:
+        if line != "":
+            # heavy wizardry \/
+            [key, value] = line.split(':')
+            if (key[0] == ' '):
+                # removes the whitespaces before the key name
+                key = key.lstrip()
+                # subtree
+                dic[superiorLevel][key] = value
+            else:
+                # tree
+                dic[key] = {}
+                superiorLevel = key
+
+    # cleans the dictionary
+    for l in structure:
+        if dic[l] == {}:
+            dic[l] = None
+
+    return dic
+
 ##=====AUX CLASS=====##
+
 # TODO: properly document this shit
 # this shit adds a fucking folder to a zip file
 class ZipUtilities:
