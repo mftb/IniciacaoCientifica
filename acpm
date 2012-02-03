@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import os, sys, urllib, yaml, shutil, subprocess, zipfile
+import os, sys, urllib, shutil, zipfile
 
 # notice that this shit requires a connection to the web in order to properly work
+# MAJOR TODO: remove swearings from remarks
 
 ##=====COMMANDS FUNCTIONS=====##
 
@@ -410,20 +411,20 @@ def loadYAML(content):
                 # tree
                 dic[key] = {}
                 superiorLevel = key
-
     # cleans the dictionary
     for l in structure:
         if dic[l] == {}:
             dic[l] = None
-
     return dic
+    
 
 ##=====AUX CLASS=====##
 
+
+##=====ZipUtilities=====##
 # TODO: properly document this shit
-# this shit adds a fucking folder to a zip file
 class ZipUtilities:
-    # this stuff now takes a list as arg
+    # this method now takes a list as arg
     def toZip(self, files_to_zip, filename):
         zip_file = zipfile.ZipFile(filename, "w")
         for file_to_zip in files_to_zip:
@@ -432,15 +433,13 @@ class ZipUtilities:
             else:
                 self.addFolderToZip(zip_file, file_to_zip)
         zip_file.close()
-
+    # aux method
     def addFolderToZip(self, zip_file, folder): 
         for file_ in os.listdir(folder):
             full_path = os.path.join(folder, file_)
             if os.path.isfile(full_path):
-                #print "File added: " + str(full_path)
                 zip_file.write(full_path)
             elif os.path.isdir(full_path):
-                #print "Entering folder: " + str(full_path)
                 self.addFolderToZip(zip_file, full_path)
 
 
