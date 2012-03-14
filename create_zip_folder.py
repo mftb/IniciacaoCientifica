@@ -1,3 +1,5 @@
+# LOL WTF BBQ
+
 import zipfile, os, sys
 
 # this shit adds a fucking folder to a zip file
