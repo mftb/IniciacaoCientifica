@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+# -*- coding: latin1 -*-
+
+import os, sys, re
+
+cmdline = sys.argv[1:]
+
+if len(cmdline) > 1:
+    print "Too much args. Exiting..."
+    sys.exit(1)
+
+if not os.path.isfile(cmdline[0]):
+    print "File does not exists. Exiting..."
+    sys.exit(1)
+
+f = open(cmdline[0], 'r')
+# shit can get serious here if the file is too big
+data = f.read()
+f.close()
+
+data = data.split('\n')
+
+# searchs for "*whitespace**whitespace*sc_"
+pattern = '\s\ssc_'
+# more efficient
+prog = re.compile(pattern)
+# searches for "*whitespace**number**dot**number**whitespace*"
+num = '\s(\d+\.\d+)\s'
+num_prog = re.compile(num)
+
+i = 0.0
+
+for j in data:
+    match = prog.findall(j)
+    if match:
+        n = num_prog.findall(j)
+        if n:
+            i += float(n[0])
+
+print"Total time:", i
