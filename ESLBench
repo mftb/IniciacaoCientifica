@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+# -*- coding: latin1 -*-
+
+import os, sys
+from datetime import *
+
+def clean():
+    for root, dirs, files in os.walk(os.getcwd()):
+        if '.svn' in dirs:
+            dirs.remove('.svn')
+        for f in files:
+            if (f[-1] != '~') and (f[-2] != '.' and (f[-1] != 'x' or f[-1] != 'o')):
+                files.remove(f)
+        for f in files:
+            os.remove(os.path.join(root, f))
+
+def makefile(proc, nproc, sw):
+    return "#FILE GENERATED AUTOMATICALLY - DO NOT EDIT\nexport PROCESSOR := " \
+            + proc + "\nexport NUMPROCESSORS := " + nproc + \
+            "\nexport SOFTWARE := " + sw + "\nexport CROSS := " + proc + \
+            "-elf-gcc\nexport PLATFORM := $(PROCESSOR).$(NUMPROCESSORS)\n\n" + \
+            "include Makefile.conf\ninclude Makefile.rules\n"
+
+# “Smart data structures and dumb code works a lot better than the other
+# way around.”
+# —Eric Raymond, The Cathedral and the Bazaar, chapter 5
+
+# === DEFINES ===
+procs = ['mips', 'powerpc', 'sparc']
+nprocs = ['01', '02', '04', '08', '16']
+sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'patricia', 'sha', 
+       'stringsearch', 'susancorners', 'susanedges', 'susansmoothing',
+       'water', 'water-spatial']
+cmds = {'-p':'all', '-c':'all', '-s':'all'}
+
+# gets the command line args
+cmdline=sys.argv[1:]
+a = []
+
+
+# TODO: armor up the arg reading
+if len(cmdline) == 1 and cmdline[0] == "-h":
+    print "Usage: ./ESLBench -p=<processor> -c=<number_of_cores> -s=<software>"
+    print "       ./ESLBench --clean"
+    print "       ./ESLBench -h"
+    sys.exit(0)
+elif len(cmdline) == 1 and cmdline[0] == "--clean":
+    clean()
+    sys.exit(0)
+elif len(cmdline) <= 3:
+    for i in cmdline:
+        a = i.split('=')
+        if a[0] in cmds.keys():
+            cmds[a[0]] = a[1]        
+elif len(cmdline) > 3:
+    print "Error: too many arguments. Exiting..."
+    sys.exit(1)
+
+
+proc = cmds['-p']
+nproc = cmds['-c']
+sw = cmds['-s']
+
+# test for invalid args
+if (proc not in procs and proc != "all") or \
+   (nproc not in nprocs and nproc != "all") or (sw not in sws and sw != "all"):
+    print "Error: invalid argument. Exiting..."
+    sys.exit(1)
+
+
+make = []
+mk = ""
+
+if proc == "all" and nproc == "all" and sw == "all":
+    for i in procs:
+        for j in nprocs:
+            for k in sws:
+                make.append(makefile(i, j, k))
+elif proc == "all" and nproc == "all":
+    for i in procs:
+        for j in nprocs:
+            make.append(makefile(i, j, sw))
+elif proc == "all" and sw == "all":
+    for i in procs:
+        for j in sws:
+            make.append(makefile(i, nproc, j))
+elif nproc == "all" and sw == "all":
+    for i in nprocs:
+        for j in sws:
+            make.append(makefile(proc, i, j))
+elif proc == "all":
+    for i in procs:
+        make.append(makefile(i, nproc, sw))
+elif nproc == "all":
+    for i in nprocs:
+        make.append(makefile(proc, i, sw))
+elif sw == "all":
+    for i in sws:
+        make.append(makefile(proc, nproc, i))
+else:
+    mk = makefile(proc, nproc, sw)
+    make.append(mk)
+
+
+
+try:
+    for i in make:
+        os.system("rm Makefile")
+        f = open("Makefile", "w")
+        f.write(i)
+        f.close()
+        os.system("make clean all run")
+
+        # TODO \/
+        # all remarked lines below are the ./ESLBench --prepare -p=<processor> -c=<cores> -s=<software>
+        #os.system("make clean all")
+        #path = "rundir/" + proc + "." + nproc + "." + sw
+        #os.system("mkdir -p " + path) # creates rundir for each platform
+        #os.system("make copy")
+        #generate_makefile(path, proc, nproc, sw) # creates makefile with run rule: ./$(PROCESSOR).(NUMPROCESSORS).x --load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
+        #s += path + "\n"
+    #f = open("run", "w")
+    #f.write(s)
+    #f.close()        
+
+        # all remarked lines below are the ./ESLBench --run
+        # TODO: armor this shit
+        #f = open("run", "r")
+        #content = f.read()
+        #f.close()
+        #l = content.split("\n")
+        #l.remove("")
+        #for j in l:
+            #os.chdir(j)
+            #os.system("make run")
+
+except:
+    print "Error! Exiting..."
+    sys.exit(1)
+
