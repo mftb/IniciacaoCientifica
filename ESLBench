@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
+# ESLBench frontend script by Matheus Boy
+
 import os, sys
 from datetime import *
 
+# === AUXILIARY FUNCTIONS ===
+
+# cleans up the dir structure in order to commit to version control
 def clean():
     for root, dirs, files in os.walk(os.getcwd()):
         if '.svn' in dirs:
@@ -14,12 +19,53 @@ def clean():
         for f in files:
             os.remove(os.path.join(root, f))
 
+# general Makefile creator
 def makefile(proc, nproc, sw):
     return "#FILE GENERATED AUTOMATICALLY - DO NOT EDIT\nexport PROCESSOR := " \
             + proc + "\nexport NUMPROCESSORS := " + nproc + \
             "\nexport SOFTWARE := " + sw + "\nexport CROSS := " + proc + \
             "-elf-gcc\nexport PLATFORM := $(PROCESSOR).$(NUMPROCESSORS)\n\n" + \
             "include Makefile.conf\ninclude Makefile.rules\n"
+
+# prints usage
+def help():
+    print "Usage: ./ESLBench --build -p=<processor> -n=<number_of_cores> -s=<software>"
+    print "       ./ESLBench --run -p=<processor> -n=<number_of_cores> -s=<software>"
+    print "       ./ESLBench --clean"
+    print "       ./ESLBench -h"
+
+# rundir Makefile creator
+def run_make(path, proc, nproc, sw):
+    make = "run:\n\t./" + proc + "." + nproc + ".x --load=" + sw + "." + proc + ".x " + nproc +"\n"
+    f = open(path + "/Makefile", "w")
+    f.write(make)
+    f.close()
+
+# rundir creation
+def build(tracker):
+    path = ""
+    try:
+        for i in tracker[0]:
+            for j in tracker[1]:
+                for k in tracker[2]:
+                    os.system("rm Makefile")
+                    # creates general Makefile
+                    f = open("Makefile", "w")
+                    f.write(makefile(i, j, k))
+                    f.close()
+                    # makes the platform
+                    os.system("make clean all")
+                    path = "rundir/" + i + "." + j + "." + k
+                    print "Creating rundir for " + path[7:] + "..."
+                    # creates rundir for each platform
+                    os.system("mkdir -p " + path)
+                    # copies it to its rundir                    
+                    os.system("make copy")
+                    # creates rundir makefile with run rule: ./$(PROCESSOR).$(NUMPROCESSORS).x --load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
+                    run_make(path, i, j, k)
+    except:
+        print "Error! Exiting..."
+        sys.exit(1)
 
 # “Smart data structures and dumb code works a lot better than the other
 # way around.”
@@ -31,34 +77,35 @@ nprocs = ['01', '02', '04', '08', '16']
 sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'patricia', 'sha', 
        'stringsearch', 'susancorners', 'susanedges', 'susansmoothing',
        'water', 'water-spatial']
-cmds = {'-p':'all', '-c':'all', '-s':'all'}
+cmds = {'-p':'all', '-n':'all', '-s':'all'}
 
 # gets the command line args
 cmdline=sys.argv[1:]
 a = []
+run = False
 
-
-# TODO: armor up the arg reading
+# armored arg passing
 if len(cmdline) == 1 and cmdline[0] == "-h":
-    print "Usage: ./ESLBench -p=<processor> -c=<number_of_cores> -s=<software>"
-    print "       ./ESLBench --clean"
-    print "       ./ESLBench -h"
+    help()
     sys.exit(0)
 elif len(cmdline) == 1 and cmdline[0] == "--clean":
     clean()
     sys.exit(0)
-elif len(cmdline) <= 3:
-    for i in cmdline:
+elif len(cmdline) == 4:
+    if cmdline[0] != "--build" and cmdline[0] != "--run":
+        help()
+        sys.exit(1)
+    run = False if cmdline[0] == "--run" else True
+    for i in cmdline[1:]:
         a = i.split('=')
         if a[0] in cmds.keys():
-            cmds[a[0]] = a[1]        
-elif len(cmdline) > 3:
-    print "Error: too many arguments. Exiting..."
+            cmds[a[0]] = a[1]
+else:
+    help()
     sys.exit(1)
 
-
 proc = cmds['-p']
-nproc = cmds['-c']
+nproc = cmds['-n']
 sw = cmds['-s']
 
 # test for invalid args
@@ -67,74 +114,44 @@ if (proc not in procs and proc != "all") or \
     print "Error: invalid argument. Exiting..."
     sys.exit(1)
 
+# platform make tracker tree
+tracker = [procs, nprocs, sws]
 
-make = []
-mk = ""
-
-if proc == "all" and nproc == "all" and sw == "all":
-    for i in procs:
-        for j in nprocs:
-            for k in sws:
-                make.append(makefile(i, j, k))
-elif proc == "all" and nproc == "all":
-    for i in procs:
-        for j in nprocs:
-            make.append(makefile(i, j, sw))
+# "fixes" the platform make tracker tree    
+if proc == "all" and nproc == "all":
+    tracker[2] = [sw]
 elif proc == "all" and sw == "all":
-    for i in procs:
-        for j in sws:
-            make.append(makefile(i, nproc, j))
+    tracker[1] = [nproc]
 elif nproc == "all" and sw == "all":
-    for i in nprocs:
-        for j in sws:
-            make.append(makefile(proc, i, j))
+    tracker[0] = [proc]
 elif proc == "all":
-    for i in procs:
-        make.append(makefile(i, nproc, sw))
+    tracker[1] = [nproc]
+    tracker[2] = [sw]
 elif nproc == "all":
-    for i in nprocs:
-        make.append(makefile(proc, i, sw))
+    tracker[0] = [proc]
+    tracker[2] = [sw]
 elif sw == "all":
-    for i in sws:
-        make.append(makefile(proc, nproc, i))
+    tracker[0] = [proc]
+    tracker[1] = [nproc]
 else:
-    mk = makefile(proc, nproc, sw)
-    make.append(mk)
+    tracker[0] = [proc]
+    tracker[1] = [nproc]
+    tracker[2] = [sw]
 
+rundir_path = ""
 
-
-try:
-    for i in make:
-        os.system("rm Makefile")
-        f = open("Makefile", "w")
-        f.write(i)
-        f.close()
-        os.system("make clean all run")
-
-        # TODO \/
-        # all remarked lines below are the ./ESLBench --prepare -p=<processor> -c=<cores> -s=<software>
-        #os.system("make clean all")
-        #path = "rundir/" + proc + "." + nproc + "." + sw
-        #os.system("mkdir -p " + path) # creates rundir for each platform
-        #os.system("make copy")
-        #generate_makefile(path, proc, nproc, sw) # creates makefile with run rule: ./$(PROCESSOR).(NUMPROCESSORS).x --load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
-        #s += path + "\n"
-    #f = open("run", "w")
-    #f.write(s)
-    #f.close()        
-
-        # all remarked lines below are the ./ESLBench --run
-        # TODO: armor this shit
-        #f = open("run", "r")
-        #content = f.read()
-        #f.close()
-        #l = content.split("\n")
-        #l.remove("")
-        #for j in l:
-            #os.chdir(j)
-            #os.system("make run")
-
-except:
-    print "Error! Exiting..."
-    sys.exit(1)
+if run:
+    build(tracker)
+else:
+    for i in tracker[0]:
+        for j in tracker[1]:
+            for k in tracker[2]:
+                rundir_path = "rundir/" + i + "." + j + "." + k + "/"
+                if os.path.isdir(rundir_path):
+                    os.chdir(rundir_path)
+                    os.system("make run")
+                else:
+                    # we have to choose what to do if rundir doesn't exists
+                    print rundir_path + "doesn't exists!"
+                os.chdir("../../")
 
