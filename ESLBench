@@ -31,8 +31,9 @@ def makefile(proc, nproc, sw):
 def help():
     print "Usage: ./ESLBench --build -p=<processor> -n=<number_of_cores> -s=<software>"
     print "       ./ESLBench --run -p=<processor> -n=<number_of_cores> -s=<software>"
+    print "       ./ESLBench --run -p=<processor> -n=<number_of_cores> -s=<software> --nobuild"
     print "       ./ESLBench --clean"
-    print "       ./ESLBench -h"
+    print "       ./ESLBench --help"
 
 # rundir Makefile creator
 def run_make(path, proc, nproc, sw):
@@ -61,17 +62,44 @@ def build(tracker):
                     os.system("mkdir -p " + path)
                     # copies it to its rundir                    
                     os.system("make copy")
-                    # creates rundir makefile with run rule: ./$(PROCESSOR).$(NUMPROCESSORS).x --load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
+                    # creates rundir makefile with run rule:
+                    #./$(PROCESSOR).$(NUMPROCESSORS).x \
+                    #--load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
                     run_make(path, i, j, k)
     except:
         print "Error! Exiting..."
         sys.exit(1)
 
+def run(tracker, nobuild):
+    try:
+        for i in tracker[0]:
+            for j in tracker[1]:
+                for k in tracker[2]:
+                    rundir_path = "rundir/" + i + "." + j + "." + k + "/"
+                    if not os.path.isdir(rundir_path):
+                        # prints warning
+                        print "WARNING! " + rundir_path + " doesn't exists!"
+                        if not nobuild:
+                            # creates rundir
+                            build([[i],[j],[k]])
+                            os.chdir(rundir_path)
+                            os.system("make run")
+                            os.chdir("../../")
+                    else:
+                        os.chdir(rundir_path)
+                        os.system("make run")
+                        os.chdir("../../")
+    except:
+        print "Error! Exiting..."
+        sys.exit(1)
+
+
+
+# === DEFINES ===
 # “Smart data structures and dumb code works a lot better than the other
 # way around.”
 # —Eric Raymond, The Cathedral and the Bazaar, chapter 5
 
-# === DEFINES ===
 procs = ['mips', 'powerpc', 'sparc']
 nprocs = ['01', '02', '04', '08', '16']
 sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'patricia', 'sha', 
@@ -79,13 +107,18 @@ sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'patricia', 'sha',
        'water', 'water-spatial']
 cmds = {'-p':'all', '-n':'all', '-s':'all'}
 
+
+
+# === MAGIC ===
+
 # gets the command line args
 cmdline=sys.argv[1:]
 a = []
-run = False
+prep = False
+nobuild = False
 
 # armored arg passing
-if len(cmdline) == 1 and cmdline[0] == "-h":
+if len(cmdline) == 1 and cmdline[0] == "--help":
     help()
     sys.exit(0)
 elif len(cmdline) == 1 and cmdline[0] == "--clean":
@@ -95,8 +128,17 @@ elif len(cmdline) == 4:
     if cmdline[0] != "--build" and cmdline[0] != "--run":
         help()
         sys.exit(1)
-    run = False if cmdline[0] == "--run" else True
+    prep = False if cmdline[0] == "--run" else True
     for i in cmdline[1:]:
+        a = i.split('=')
+        if a[0] in cmds.keys():
+            cmds[a[0]] = a[1]
+elif len(cmdline) == 5:
+    if cmdline[0] != "--run" or cmdline[4] != "--nobuild":
+        help()
+        sys.exit(1)
+    nobuild = True
+    for i in cmdline[1:4]:
         a = i.split('=')
         if a[0] in cmds.keys():
             cmds[a[0]] = a[1]
@@ -140,18 +182,8 @@ else:
 
 rundir_path = ""
 
-if run:
+if prep:
     build(tracker)
 else:
-    for i in tracker[0]:
-        for j in tracker[1]:
-            for k in tracker[2]:
-                rundir_path = "rundir/" + i + "." + j + "." + k + "/"
-                if os.path.isdir(rundir_path):
-                    os.chdir(rundir_path)
-                    os.system("make run")
-                else:
-                    # we have to choose what to do if rundir doesn't exists
-                    print rundir_path + "doesn't exists!"
-                os.chdir("../../")
+    run(tracker, nobuild)
 
