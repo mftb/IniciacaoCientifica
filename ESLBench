@@ -165,31 +165,24 @@ if (proc not in procs and proc != "all") or \
     print "Error: invalid argument. Exiting..."
     sys.exit(1)
 
-# platform make tracker tree
-tracker = []
 
-# "fixes" the platform make tracker tree
-if proc == "all" and nproc == "all" and sw == "all":
-    tracker = [procs, nprocs, sws]
-elif proc == "all" and nproc == "all":
-    tracker[2] = [sw]
-elif proc == "all" and sw == "all":
-    tracker[1] = [nproc]
-elif nproc == "all" and sw == "all":
-    tracker[0] = [proc]
-elif proc == "all":
-    tracker[1] = [nproc]
-    tracker[2] = [sw]
-elif nproc == "all":
-    tracker[0] = [proc]
-    tracker[2] = [sw]
-elif sw == "all":
-    tracker[0] = [proc]
-    tracker[1] = [nproc]
+# platform make tracker tree creation
+tracker = []
+if proc == "all":
+    tracker.append(procs)
 else:
-    tracker[0] = [proc]
-    tracker[1] = [nproc]
-    tracker[2] = [sw]
+    tracker.append([proc])
+if nproc == "all":
+    tracker.append(nprocs)
+else:
+    tracker.append([nproc])
+if sw == "all":
+    tracker.append(sws)
+else:
+    tracker.append([sw])
+
+print tracker
+sys.exit(0)
 
 rundir_path = ""
 
