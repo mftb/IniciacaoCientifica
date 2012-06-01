@@ -165,7 +165,6 @@ if (proc not in procs and proc != "all") or \
     print "Error: invalid argument. Exiting..."
     sys.exit(1)
 
-
 # platform make tracker tree creation
 tracker = []
 if proc == "all":
@@ -180,9 +179,6 @@ if sw == "all":
     tracker.append(sws)
 else:
     tracker.append([sw])
-
-print tracker
-sys.exit(0)
 
 rundir_path = ""
 
