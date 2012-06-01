@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
-# ESLBench frontend script by Matheus Boy
+# ESLBench frontend script by Matheus Boy - Unicamp - Campinas State University
 
 import os, sys
 from datetime import *
@@ -46,6 +46,7 @@ def run_make(path, proc, nproc, sw):
 def build(tracker):
     path = ""
     try:
+        # walks the platform tracker make tree
         for i in tracker[0]:
             for j in tracker[1]:
                 for k in tracker[2]:
@@ -72,10 +73,12 @@ def build(tracker):
 
 def run(tracker, nobuild):
     try:
+        # walks the platform tracker make tree
         for i in tracker[0]:
             for j in tracker[1]:
                 for k in tracker[2]:
                     rundir_path = "rundir/" + i + "." + j + "." + k + "/"
+                    # tests if rundir exists
                     if not os.path.isdir(rundir_path):
                         # prints warning
                         print "WARNING! " + rundir_path + " doesn't exists!"
@@ -102,7 +105,7 @@ def run(tracker, nobuild):
 
 procs = ['mips', 'powerpc', 'sparc']
 nprocs = ['01', '02', '04', '08', '16']
-sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'patricia', 'sha', 
+sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'sha', 
        'stringsearch', 'susancorners', 'susanedges', 'susansmoothing',
        'water', 'water-spatial']
 cmds = {'-p':'all', '-n':'all', '-s':'all'}
@@ -133,6 +136,9 @@ elif len(cmdline) == 4:
         a = i.split('=')
         if a[0] in cmds.keys():
             cmds[a[0]] = a[1]
+        else:
+            help()
+            sys.exit(1)
 elif len(cmdline) == 5:
     if cmdline[0] != "--run" or cmdline[4] != "--nobuild":
         help()
@@ -142,6 +148,9 @@ elif len(cmdline) == 5:
         a = i.split('=')
         if a[0] in cmds.keys():
             cmds[a[0]] = a[1]
+        else:
+            help()
+            sys.exit(1)
 else:
     help()
     sys.exit(1)
@@ -157,10 +166,12 @@ if (proc not in procs and proc != "all") or \
     sys.exit(1)
 
 # platform make tracker tree
-tracker = [procs, nprocs, sws]
+tracker = []
 
-# "fixes" the platform make tracker tree    
-if proc == "all" and nproc == "all":
+# "fixes" the platform make tracker tree
+if proc == "all" and nproc == "all" and sw == "all":
+    tracker = [procs, nprocs, sws]
+elif proc == "all" and nproc == "all":
     tracker[2] = [sw]
 elif proc == "all" and sw == "all":
     tracker[1] = [nproc]
