@@ -10,14 +10,15 @@ from datetime import *
 
 # cleans up the dir structure in order to commit to version control
 def clean():
+    right_files = []
     for root, dirs, files in os.walk(os.getcwd()):
         if '.svn' in dirs:
             dirs.remove('.svn')
         for f in files:
-            if (f[-1] != '~') and (f[-2] != '.' and (f[-1] != 'x' or f[-1] != 'o')):
-                files.remove(f)
-        for f in files:
-            os.remove(os.path.join(root, f))
+            if f[-1] == '~':
+                os.remove(os.path.join(root, f))
+            elif f[-2] == '.' and (f[-1] == 'x' or f[-1] == 'o'):
+                os.remove(os.path.join(root, f))
 
 # general Makefile creator
 def makefile(proc, nproc, sw):
