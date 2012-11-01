@@ -274,7 +274,7 @@ else:
 rundir_path = ""
 
 if prep:
-    build(tracker)
+    build(tracker, power)
 else:
-    run(tracker, nobuild)
+    run(tracker, nobuild, power)
 
