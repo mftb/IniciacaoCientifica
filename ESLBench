@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
+# MAJOR TODO: PROPERLY TEST THIS SHIT
+
 # ESLBench frontend script by Matheus Boy - Unicamp - Campinas State University
 
 import os, sys
-from datetime import *
 
 # === AUXILIARY FUNCTIONS ===
 
-# cleans up the dir structure in order to commit to version control
+# cleans up the dir structure and removes the rundir
+# in order to commit to version control
 def clean():
     right_files = []
     for root, dirs, files in os.walk(os.getcwd()):
@@ -19,22 +21,32 @@ def clean():
                 os.remove(os.path.join(root, f))
             elif f[-2] == '.' and (f[-1] == 'x' or f[-1] == 'o'):
                 os.remove(os.path.join(root, f))
-
+    os.system("rm -rf rundir/")
+    
 # general Makefile creator
-def makefile(proc, nproc, sw):
-    return "#FILE GENERATED AUTOMATICALLY - DO NOT EDIT\nexport PROCESSOR := " \
-            + proc + "\nexport NUMPROCESSORS := " + nproc + \
-            "\nexport SOFTWARE := " + sw + "\nexport CROSS := " + proc + \
-            "-elf-gcc\nexport PLATFORM := $(PROCESSOR).$(NUMPROCESSORS)\n\n" + \
-            "include Makefile.conf\ninclude Makefile.rules\n"
+def makefile(proc, nproc, sw, power):
+    make = "#FILE GENERATED AUTOMAGICALLY - DO NOT EDIT\nexport PROCESSOR := " \
+           + proc + "\nexport NUMPROCESSORS := " + nproc + \
+           "\nexport SOFTWARE := " + sw + "\nexport CROSS := " + proc + \
+           "-elf-gcc\nexport PLATFORM := $(PROCESSOR).plat\n"
+    if power:
+        make = make + "export POWER_SIM_FLAG := -DPOWER_SIM\n"
+    else:
+        make = make + "export POWER_SIM_FLAG := \n"
+    make = make + "include Makefile.conf\ninclude Makefile.rules\n"
+    return make
 
 # prints usage
 def help():
-    print "Usage: ./ESLBench --build -p=<processor> -n=<number_of_cores> -s=<software>"
-    print "       ./ESLBench --run -p=<processor> -n=<number_of_cores> -s=<software>"
-    print "       ./ESLBench --run -p=<processor> -n=<number_of_cores> -s=<software> --nobuild"
-    print "       ./ESLBench --clean"
-    print "       ./ESLBench --help"
+    print "Usage: ./ESLBench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software>"
+    print "       ./ESLBench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software>"
+    print ""
+    print "       ./ESLBench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
+    print "       ./ESLBench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
+    print "       ./ESLBench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-nb|--nobuild]"
+    print ""
+    print "       ./ESLBench [-c|--clean]"
+    print "       ./ESLBench [-h|--help]"
 
 # rundir Makefile creator
 def run_make(path, proc, nproc, sw):
@@ -44,7 +56,7 @@ def run_make(path, proc, nproc, sw):
     f.close()
 
 # rundir creation
-def build(tracker):
+def build(tracker, power):
     path = ""
     try:
         # walks the platform tracker make tree
@@ -54,7 +66,11 @@ def build(tracker):
                     os.system("rm Makefile")
                     # creates general Makefile
                     f = open("Makefile", "w")
-                    f.write(makefile(i, j, k))
+                    if i == 'arm' or i == 'powerpc':
+                        print "WARNING! The selected processor does not support PowerSC!"
+                        f.write(makefile(i, j, k, False))
+                    else:
+                        f.write(makefile(i, j, k, power))
                     f.close()
                     # makes the platform
                     os.system("make clean all")
@@ -72,7 +88,8 @@ def build(tracker):
         print "Error! Exiting..."
         sys.exit(1)
 
-def run(tracker, nobuild):
+# platform run
+def run(tracker, nobuild, power):
     try:
         # walks the platform tracker make tree
         for i in tracker[0]:
@@ -85,7 +102,7 @@ def run(tracker, nobuild):
                         print "WARNING! " + rundir_path + " doesn't exists!"
                         if not nobuild:
                             # creates rundir
-                            build([[i],[j],[k]])
+                            build([[i],[j],[k]], power)
                             os.chdir(rundir_path)
                             os.system("make run")
                             os.chdir("../../")
@@ -104,61 +121,134 @@ def run(tracker, nobuild):
 # way around.”
 # —Eric Raymond, The Cathedral and the Bazaar, chapter 5
 
-procs = ['mips', 'powerpc', 'sparc']
+procs = ['arm', 'mips', 'powerpc', 'sparc']
 nprocs = ['01', '02', '04', '08', '16']
-sws = ['basicmath', 'dijkstra','fft', 'lu', 'ocean', 'sha', 
+sws = ['basicmath', 'dijkstra', 'fft', 'lu', 'ocean', 'sha', 
        'stringsearch', 'susancorners', 'susanedges', 'susansmoothing',
        'water', 'water-spatial']
-cmds = {'-p':'all', '-n':'all', '-s':'all'}
-
-
+# optional args
+opts = {'-nb':'--nobuild', '-pw':'--power'}
+# there must be exactly one arg of the below, and they're mutex
+cmds = {'-r':'--run', '-b':'--build'}
+# there must always be those 3 args
+args = {'-p':'--processor', '-n':'--numcores', '-s':'--software'}
+# other args, also optional, but they come alone
+xtrs = {'-c':'--clean', '-h':'--help'}
 
 # === MAGIC ===
 
 # gets the command line args
-cmdline=sys.argv[1:]
+cmdline = sys.argv[1:]
 a = []
+# controlled by --run/--build, False if --run, True if --build
 prep = False
 nobuild = False
+power = False
 
-# armored arg passing
-if len(cmdline) == 1 and cmdline[0] == "--help":
-    help()
-    sys.exit(0)
-elif len(cmdline) == 1 and cmdline[0] == "--clean":
-    clean()
-    sys.exit(0)
+
+# TODO: TEST THIS SHIT
+
+# almost nailed the armored arg passing
+if len(cmdline) == 1:
+    if cmdline[0] not in xtrs.keys() and cmdline[0] not in xtrs.values():
+        help()
+        sys.exit(1)
+    else:
+        if cmdline[0] == '-h' or cmdline[0] == '--help':
+            help()
+            sys.exit(0)
+        else:
+            clean()
+            sys.exit(0)
+
 elif len(cmdline) == 4:
-    if cmdline[0] != "--build" and cmdline[0] != "--run":
-        help()
-        sys.exit(1)
-    prep = False if cmdline[0] == "--run" else True
-    for i in cmdline[1:]:
-        a = i.split('=')
-        if a[0] in cmds.keys():
-            cmds[a[0]] = a[1]
+    # parsing in order to ensure that there are exclusively cmds and args
+    for i in cmdline:
+        s = i.split('=')
+        if len(s) == 1:
+            if s[0] not in cmds.keys() and s[0] not in cmds.values():
+                help()
+                sys.exit(1)
+        elif len(s) == 2:
+            if s[0] not in args.keys() and s[0] not in args.values():
+                help()
+                sys.exit(1)
         else:
             help()
             sys.exit(1)
+    # now we are sure that there are only cmds and args
+    # tests for build and run together
+    if ('-r' in cmdline and '-b' in cmdline) or ('-r' in cmdline and '--build'\
+       in cmdline) or ('--run' in cmdline and '--build' in cmdline) or \
+       ('--run' in cmdline and '-b' in cmdline):
+        help()
+        sys.exit(1)
+    if '-b' or '--build' in cmdline:
+        prep = True
+    for i in cmdline:
+        s = i.split('=')
+        if s[0] == '-p' or s[0] == '--processor':
+            proc = s[1]
+        elif s[0] == '-n' or s[0] == '--numcores':
+            nproc = s[1]
+        elif s[0] == '-s' or s[0] == '--software':
+            sw = s[1]
+
 elif len(cmdline) == 5:
-    if cmdline[0] != "--run" or cmdline[4] != "--nobuild":
-        help()
-        sys.exit(1)
-    nobuild = True
-    for i in cmdline[1:4]:
-        a = i.split('=')
-        if a[0] in cmds.keys():
-            cmds[a[0]] = a[1]
+    # parsing in order to ensure that there are exclusively opts, cmds and args
+    for i in cmdline:
+        s = i.split('=')
+        if len(s) == 1:
+            if s[0] not in cmds.keys() and s[0] not in cmds.values() \
+               and s[0] not in opts.keys() and s[0] not in opts.values():
+                help()
+                sys.exit(1)
+        elif len(s) == 2:
+            if s[0] not in args.keys() and s[0] not in args.values():
+                help()
+                sys.exit(1)
         else:
             help()
             sys.exit(1)
+    
+    # now we are sure that there are only opts, cmds and args
+    # tests for build and run together
+    if ('-r' in cmdline and '-b' in cmdline) or ('-r' in cmdline and '--build'\
+       in cmdline) or ('--run' in cmdline and '--build' in cmdline) or \
+       ('--run' in cmdline and '-b' in cmdline) :
+        help()
+        sys.exit(1)
+    # tests for build and nobuild together
+    if ('-nb' in cmdline and '-b' in cmdline) or ('-nb' in cmdline and '--build'\
+       in cmdline) or ('--nobuild' in cmdline and '--build' in cmdline) or \
+       ('--nobuild' in cmdline and '-b' in cmdline) :
+        help()
+        sys.exit(1)
+    # tests for power and nobuild together
+    if ('-pw' in cmdline and '-nb' in cmdline) or ('-pw' in cmdline and '--nobuild'\
+       in cmdline) or ('--power' in cmdline and '--nobuild' in cmdline) or \
+       ('--power' in cmdline and '-nb' in cmdline) :
+        help()
+        sys.exit(1)
+    # it is for sure a valid arg set            
+    if '-b' or '--build' in cmdline:
+        prep = True
+    if '-pw' or '--power' in cmdline:
+        power = True
+    if '-nb' or '--nobuild' in cmdline:
+        nobuild = True
+    for i in cmdline:
+        s = i.split('=')
+        if s[0] == '-p' or s[0] == '--processor':
+            proc = s[1]
+        elif s[0] == '-n' or s[0] == '--numcores':
+            nproc = s[1]
+        elif s[0] == '-s' or s[0] == '--software':
+            sw = s[1]
+
 else:
     help()
     sys.exit(1)
-
-proc = cmds['-p']
-nproc = cmds['-n']
-sw = cmds['-s']
 
 # test for invalid args
 if (proc not in procs and proc != "all") or \
