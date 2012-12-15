@@ -55,6 +55,16 @@ def run_make(path, proc, nproc, sw):
     f.write(make)
     f.close()
 
+
+def condor_task(path, proc, nproc, sw, queue):
+    task = "Universe = vanilla\nLog = eslbench.log\nOutput = eslbench.out\n"\
+    "Error = eslbench.err\nshould_transfer_files = No\n"\
+    "Executable = " + proc + "." + nproc + ".x\nArguments = --load=" + sw + "." + proc + ".x"\
+    "\nQueue " + str(queue) + "\n"
+    f = open(path + "/condor_task", "w")
+    f.write(task)
+    f.close()
+
 # rundir creation
 def build(tracker, power):
     path = ""
@@ -66,7 +76,7 @@ def build(tracker, power):
                     os.system("rm Makefile")
                     # creates general Makefile
                     f = open("Makefile", "w")
-                    if i == 'arm' or i == 'powerpc':
+                    if i == 'arm' or i == 'powerpc' and power:
                         print "WARNING! The selected processor does not support PowerSC!"
                         f.write(makefile(i, j, k, False))
                     else:
@@ -84,6 +94,8 @@ def build(tracker, power):
                     #./$(PROCESSOR).$(NUMPROCESSORS).x \
                     #--load=$(SOFTWARE).$(PROCESSOR).x $(NUMPROCESSORS)
                     run_make(path, i, j, k)
+                    # creates condor task file in the rundir
+                    condor_task(path, i, j, k, 1)
     except:
         print "Error! Exiting..."
         sys.exit(1)
