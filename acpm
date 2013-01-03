@@ -2,7 +2,7 @@
 
 import os, sys, urllib, shutil, zipfile
 
-# notice that this shit requires a connection to the web in order to properly work
+# notice that this requires a connection to the web in order to properly work
 # MAJOR TODO: remove swearings from remarks
 
 ##=====COMMANDS FUNCTIONS=====##
@@ -12,10 +12,8 @@ import os, sys, urllib, shutil, zipfile
 #This function access the content of the file
 #"content.acpm" in the repo and print the structure
 #of the componet that there are in the repo.
-# FIXME - NEED TRY/EXCEPT
-# FIXED - added try/except block
-def ListRepo(): # online shit / I guess I undestood this shit
-    file_url = repo_url + "content.acpm" # fucking repo_url is hardcoded, but is little what we can do in this situation
+def ListRepo(): # online
+    file_url = repo_url + "content.acpm" # repo_url is hardcoded, but is little what we can do in this situation
     # so, content.acpm is an YAML
     print "Trying to access \'" + file_url + "\'..."
     try:
@@ -29,11 +27,12 @@ def ListRepo(): # online shit / I guess I undestood this shit
         # now we are going to replace the YAML library usage with our own parser
         yaml_obj = loadYAML(content)
         # as structure being hardcoded, there is a tight relation between the local stuff and the repo, they use the same file structure
-        # this shit works kinda like list(), but reading the repo YAML
+        # however, this tight relation is the purpose of the reference platform itself
+        # this works kinda like list(), but reading the repo YAML
         for x in structure:
             print x.upper() + ":"
             if yaml_obj[x] != None:
-                for y in sorted(yaml_obj[x].iterkeys()): # why this shit must be sorted? it is sorted for an homogeneous key display
+                for y in sorted(yaml_obj[x].iterkeys()): # why this must be sorted? it is sorted for an homogeneous key display
                     print "  " + y + ": " + yaml_obj[x][y]
                 print ""
             else:
@@ -44,7 +43,7 @@ def ListRepo(): # online shit / I guess I undestood this shit
     
 ##=====List=====##
 #This function list the structure of local components
-def    List(): # I guess I understood this shit
+def List(): # I guess I understood this
     localpath = os.getcwd()
     for x in structure: # structure is hardcoded, so it will only look the appropriate folders, but I can't see if there is an alternative to this crappy list
         mypath = localpath + "/" + x
@@ -61,20 +60,19 @@ def    List(): # I guess I understood this shit
 #if t find, the function dowanload the component package
 #and unpack it.
 #if not, returns error.
-# FIXME
-def Get(type, name): # online shit / I guess I understood this shit
+# FIXME: set exception types on first try/except block
+def Get(type, name): # online / I guess I understood it
     # smart way to do the stuff
     if type != None:
         lst = []
         lst.append(type)
     else:
         # copies the structure itself, not the reference to it (safer)
-        # there's a other way to do this: list = list(structure), but unused becuase the list object overlaps the builtin function list
         lst = list(structure)
     # bulletproof
     try:
         component = findRepoComponent(name, lst)
-    # FIXME: check this shit for other errors that aren't a bad component type or web issues
+    # FIXME: check this for other errors that aren't a bad component type or web issues
     # bad component type
     except KeyError:
         print "!!! Error: invalid component type."
@@ -85,9 +83,9 @@ def Get(type, name): # online shit / I guess I understood this shit
         sys.exit(1)
     # "component" is a string
     if component != None:
-        # my guess is this shit - "target" - is the fucking component .acpmpack URL
+        # my guess is this thing - "target" - is the component .acpmpack URL
         target = os.getcwd() + "/" + component.split("/")[-2] + "/"
-        # my guess is this shit is the fucking file name that will be on the local file system, the .acpmpack
+        # my guess is this is the file name that will be on the local file system, the .acpmpack
         fileName = component.split("/")[-1]
         try:
             download(component, target, fileName)
@@ -98,21 +96,19 @@ def Get(type, name): # online shit / I guess I understood this shit
         print "!!! Error: Component " + name + " not found"
         sys.exit(1)
     print "Component " + name + " was downloaded successfully."
-    # after downloading, extracts the stuff; target + fileName is the fucking path of the downloaded .acpmpack
+    # after downloading, extracts the stuff; target + fileName is the path of the downloaded .acpmpack
     Unpack(target + fileName)
 
 ##=====Put=====##
 #This function was not implemented.
-def Put(type, name): # online shit / trivial shit
+def Put(type, name): # online / trivial
     print "Sorry!! Function not yet implemented."
     sys.exit(0)
 
 ##=====Pack=====##
 #This function pack the component or platfomrs.
 #It compress all files in a acpmpack file.
-# FIXME - NEED TRY/EXCEPT
-# FIXED - try/except block added
-def Pack(type, name): # I guess I understood this shit
+def Pack(type, name):
     # my initial hunch is that this function gets all the components you have on your acpm local package
     source_files = ""
     component = ""
@@ -122,7 +118,7 @@ def Pack(type, name): # I guess I understood this shit
         # walks in the file system getting each source file
         for x in structure:
             # note that localpath is kinda the same, but x alters itself on each iteration, being each one of the contents of the list structure
-            # I noticed that the list structure is kinda the base of all this shit
+            # I noticed that the list structure is kinda the base of all this thing
             mypath = localpath + "/" + x + "/"
             if os.path.exists(mypath):
                 source_files = source_files + x + "/ "
@@ -159,17 +155,12 @@ def Pack(type, name): # I guess I understood this shit
         else:
             print "!!! Error: Component " + name + " not found"
             sys.exit(1)
-    #print component
-    #print source_files
-    #print package_file
-    #sys.exit(1)
+
     print "Packing " + package_file + "..."
-    #cmd = "tar -czf " + package_file + " " + source_files # creates .acpmpack file package_file from source_files using zip compression
     # bulletproof
     try:
         utilities = ZipUtilities()
         utilities.toZip(source_files,package_file)
-        #p = subprocess.Popen(cmd, shell=True) # interesting... guess this might be a fork
         print "Done."
     except:
         print "!!! Error: unable to pack, please try again."
@@ -179,21 +170,17 @@ def Pack(type, name): # I guess I understood this shit
 
 ##=====Unpack=====##
 #This function unpack the component package
-# FIXME
-# try/except block added, and using zipfile to extract the file
-def Unpack(package): # I guess I understood this shit
+def Unpack(package): # I guess I understood this
     if not os.path.exists(package):
         print "!!! Error: Package " + package + " doesn't exists."
         sys.exit(1)
     else:
-        # this shit is the anti-pack
+        # this is the anti-pack
         print "Unpacking " + package + " ..."
-        #cmd = "tar -xzmf " + package # extracts .acpmpack file package using zip compression and keeps the ultimate updated file (-m)
         # bulletproof
         try:
             z = zipfile.ZipFile(package,"a")
             z.extractall()
-            #p = subprocess.Popen(cmd, shell=True) # fork... but I still don't understand why it forks the tar operation
             z.close()
             print "Done."
         except:
@@ -206,12 +193,10 @@ def Unpack(package): # I guess I understood this shit
 #if exist a local copy of the template component
 #the functions copy it with the new name,
 #if not, the function try to get in the repo.
-# FIXME - NEED TRY/EXCEPT
-# FIXED - try/except block added
-def Create(type, name): # calls get, so this shit is online / I guess I undertood how this works - at least from the inside - but the result isn't obvious to me
+def Create(type, name): # calls get, so this is online / I guess I understood how this works - at least from the inside - but the result isn't obvious to me
     # might need online testing
-    # there is a need to already be a fucking template in the local repo, otherwise, it will search it online
-    # so, the template is a fucking dir tree?
+    # there is a need to already be a template in the local repo, otherwise, it will search it online
+    # so, the template is a dir tree?
     list = []
     list.append(type) # there is a REAL need here for the type
     # bulletproof
@@ -224,7 +209,7 @@ def Create(type, name): # calls get, so this shit is online / I guess I undertoo
     if component != None:
         target = os.getcwd() + "/" + type + "/"
         try:
-            # my guess is this shit copies the whole filesystem tree under component to target + name (sorry for the kinda obvious stuff)
+            # my guess is this copies the whole filesystem tree under component to target + name (sorry for the kinda obvious stuff)
             shutil.copytree(component, target + name)
         except:
             print "!!! Error: Component template of " + type + " not found"
@@ -238,7 +223,7 @@ def Create(type, name): # calls get, so this shit is online / I guess I undertoo
 #This function download the start.package
 #and unpack it. This File has the structure of dir
 #and the main Makefile.
-def Start(): # online shit / I guess I understood this shit
+def Start(): # online / I guess I understood this
     target = os.getcwd() + "/"
     fileName = "start.acpmpack"
     try:
@@ -249,6 +234,7 @@ def Start(): # online shit / I guess I understood this shit
         sys.exit(1)
     # ...and unpacks it
     Unpack(target + fileName)
+    # creates the reference platform dir structure
     for folder in structure:
         os.mkdir(folder)
     print "The main structure was created successfully."
@@ -257,8 +243,8 @@ def Start(): # online shit / I guess I understood this shit
 #This function creates the "content.acpm" file.
 #The function gets all components in the local structure
 #and put it in a YAML file.
-def Repo(): # I guess I understood this shit
-    # this shit works just like list(), but put the contents in a fucking file
+def Repo(): # I guess I understood this
+    # this works just like list(), but put the contents in a file
     localpath = os.getcwd()
     f = open(localpath + "/content.acpm", "w")
     for x in structure:
@@ -274,7 +260,7 @@ def Repo(): # I guess I understood this shit
 
 ##=====Help=====##
 #This function shows the help contents.
-def Help(): # trivial shit
+def Help(): # trivial
     print """ 
   -c,  --create              create
   -g,  --get                 get
@@ -294,7 +280,7 @@ def Help(): # trivial shit
 #This function gets the content of the file
 #"desc.txt" and return it
 #if the file doesn't exist, it returns none
-def getDescriptionText(path): # I guess I undertood pretty well how this shit works
+def getDescriptionText(path): # I guess I undertood pretty well how this works
     path = path + "/desc.txt"
     try:
         f = open(path, "r")
@@ -307,8 +293,9 @@ def getDescriptionText(path): # I guess I undertood pretty well how this shit wo
 ##=====download=====##
 #This function gets a file in the repo and copy it
 #to the user local path
-def download(source, target, name): # online shit / I guess I understood this shit
-    # all this shit can generate exceptions, as being file operations
+# FIXME: add proper try/except block
+def download(source, target, name): # online / I guess I understood it
+    # all this can generate exceptions, as being file operations
     webFile = urllib.urlopen(source) # opens the webfile in the local memory (kinda obvious)
     localFile = open(target + name, 'w') # creates a local file (not *that* obvious, but still obvious)
     localFile.write(webFile.read()) # writes into it (obvious)
@@ -319,7 +306,7 @@ def download(source, target, name): # online shit / I guess I understood this sh
 #This function search for the component in the users local path
 #if it founds, returns the path to the component
 #if not, return none
-def findLocalComponent(name, lst): # I guess I understood this shit
+def findLocalComponent(name, lst): # I guess I understood it
     path = os.getcwd()
     # gets the full file system tree below path, both dirs and files
     tmpdirlist = os.listdir(path)
@@ -335,13 +322,13 @@ def findLocalComponent(name, lst): # I guess I understood this shit
 #This function search for the component in the repo
 #if it founds, returns the path to the component
 #if not, return none
-def findRepoComponent(name, lst): # online shit / I guess I understood this shit
-    # this shit works just like findLocalComponent when seen from the outside, but reads the fucking repo yaml file and searches it
+def findRepoComponent(name, lst): # online / I guess I understood it
+    # this works just like findLocalComponent when seen from the outside, but reads the repo yaml file and searches it
     file_url = repo_url + "content.acpm"
     f = urllib.urlopen(file_url)
     content = f.read()
     f.close()
-    # here "content" is the fucking yaml
+    # here "content" is the yaml file
     yaml_obj = {}
     yaml_obj = loadYAML(content)
     
@@ -350,7 +337,7 @@ def findRepoComponent(name, lst): # online shit / I guess I understood this shit
     for x in lst:
         if yaml_obj[x] != None:
             if compName in yaml_obj[x].iterkeys():
-                # if found the fucking shit, returns its path
+                # if found the component, returns its path
                 return repo_url + x + "/" + name + ".acpmpack"
     return None
 
@@ -359,7 +346,7 @@ def findRepoComponent(name, lst): # online shit / I guess I understood this shit
 #This function gets the appropriate repo URL 
 #and generates the repo.cfg file, which can
 #be edited to add alternative repos
-# TODO: test this shit
+# TODO: test properly
 # tested offline and with crippled internet access (a.k.a. "Unicamp-Visitante")
 def smartGetRepo():
     hardcoded_repo_url = "http://www.students.ic.unicamp.br/~ra103501/acpm_repo/" # Matheus Boy
@@ -392,7 +379,7 @@ def smartGetRepo():
 
 
 ##=====loadYAML=====##
-# TODO: properly document this shit
+# TODO: properly document this
 def loadYAML(content):
     dic = {}
     superiorLevel = ''
@@ -422,7 +409,7 @@ def loadYAML(content):
 
 
 ##=====ZipUtilities=====##
-# TODO: properly document this shit
+# TODO: properly document this
 class ZipUtilities:
     # this method now takes a list as arg
     def toZip(self, files_to_zip, filename):
@@ -445,14 +432,14 @@ class ZipUtilities:
 
 
 ##=====DEFINES=====##
-# a.k.a. FUCKING HARDCODED SHIT
+# a.k.a. HARDCODED STUFF
 
 ##=====repo location=====#
 repo_url = smartGetRepo()
 
 
 ##=====list of supported commands=====#
-commands={ # fucking dictionary -- the key is the short action and the value is the action itself
+commands={ # dictionary -- the key is the short action and the value is the action itself
 "lr":"listrepo", "l":"list", "g":"get", "pu":"put", 
 "pa":"pack", "u":"unpack", "c":"create",
 "s":"start", "r":"repo", "h":"help"
@@ -464,8 +451,8 @@ structure = ["platforms", "processors", "ip", "is", "sw", "wrappers"]
 
 # here begins the magic... and I guess I undertood it
 
-execline = [] # this shit is an "shortcut" to the fucking action itself -- line... would it be a queue (FIFO)?
-#get cmdline args
+execline = [] # this is a "shortcut" to the action itself -- line... would it be a queue (FIFO)?
+# get cmdline args
 cmdline=sys.argv[1:] # my guess is here where the arguments are caught (this remark is redundant due to the original developer remark above)
 
 if cmdline==[]:
@@ -516,7 +503,7 @@ else:
         name = None
         
 
-#switch with the functions calls
+# switch with the functions calls
 if action == "listrepo":
     ListRepo()
 
@@ -549,20 +536,6 @@ elif action == "help":
 
 else:
     print "!!! Error: No command found" # how the hell am I going to get this error?
-    sys.exit(1) # maybe this is an equivalent to "raise SystemExit", or "raise SystemExit" is syntatic sugar for this?
+    sys.exit(1) # maybe this is an equivalent to "raise SystemExit", or "raise SystemExit" is syntatic sugar for this? --> no, SystemExit equals sys.exit(0)
 
-
-
-# Matheus Boy's remarks:
-
-# The code is kinda well written and clear, but - allowing myself to be an ass - my guess is because the developer wasn't really fluent of python
-#(neither I fully am) so, he didn't use heavy wizardries; also, I was already familiar with python, so it was easier to undertand the code.
-
-# I've got kinda interested in some issues I found along the study of the code. The main issue is that the user *needs* to have a connection to the web in order
-# to this stuff work 100% well and trigger no errors from the python interpreter. Some stuff that is online could be in try/except blocks so it screams
-# no ugly python errors.
-
-# I couldn't get to run the quad_sort software, because I need other "acpm tools" to do it. The problem isn't in this code, but in the Makefile. There is
-# some hardcoded stuff in Makefiles that can lead to some trouble. I don't know if it was an spec of the project to make ALL things work, but I think it is a
-# point of interest, and may need further care.
 
