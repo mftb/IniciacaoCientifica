@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
-# MAJOR TODO: PROPERLY TEST THIS SHIT
+# MAJOR TODO: PROPERLY TEST
 
 # eslbench frontend script by Matheus Boy - Unicamp - Campinas State University
 
@@ -55,7 +55,8 @@ def run_make(path, proc, nproc, sw):
     f.write(make)
     f.close()
 
-
+# condor submission file creator
+# build only, never run
 def condor_task(path, proc, nproc, sw, queue):
     task = "Universe = vanilla\nLog = eslbench.log\nOutput = eslbench.out\n"\
     "Error = eslbench.err\nshould_transfer_files = No\n"\
@@ -66,7 +67,7 @@ def condor_task(path, proc, nproc, sw, queue):
     f.close()
 
 # rundir creation
-def build(tracker, power):
+def build(tracker, power, condor):
     path = ""
     try:
         # walks the platform tracker make tree
@@ -101,7 +102,7 @@ def build(tracker, power):
         sys.exit(1)
 
 # platform run
-def run(tracker, nobuild, power):
+def run(tracker, nobuild, power, condor):
     try:
         # walks the platform tracker make tree
         for i in tracker[0]:
@@ -114,7 +115,7 @@ def run(tracker, nobuild, power):
                         print "WARNING! " + rundir_path + " doesn't exists!"
                         if not nobuild:
                             # creates rundir
-                            build([[i],[j],[k]], power)
+                            build([[i],[j],[k]], power, condor)
                             os.chdir(rundir_path)
                             os.system("make run")
                             os.chdir("../../")
@@ -156,9 +157,10 @@ a = []
 prep = False
 nobuild = False
 power = False
+# TODO: think the logic to this arg
+condor = 1
 
-
-# TODO: TEST THIS SHIT
+# TODO: TEST \/
 
 # almost nailed the armored arg passing
 if len(cmdline) == 1:
@@ -286,7 +288,7 @@ else:
 rundir_path = ""
 
 if prep:
-    build(tracker, power)
+    build(tracker, power, condor)
 else:
-    run(tracker, nobuild, power)
+    run(tracker, nobuild, power, condor)
 
