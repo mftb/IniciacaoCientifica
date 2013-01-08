@@ -43,9 +43,13 @@ def help():
     print ""
     print "       ./eslbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
     print "       ./eslbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
+    print "       ./eslbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-c|--condor]=<queue>"
+    print "       ./eslbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-c|--condor]=<queue>"
+    print "       ./eslbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power] [-c|--condor]=<queue>"
+    print "       ./eslbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power] [-c|--condor]=<queue>"
     print "       ./eslbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-nb|--nobuild]"
     print ""
-    print "       ./eslbench [-c|--clean]"
+    print "       ./eslbench [-l|--clean]"
     print "       ./eslbench [-h|--help]"
 
 # rundir Makefile creator
@@ -144,9 +148,9 @@ opts = {'-nb':'--nobuild', '-pw':'--power'}
 # there must be exactly one arg of the below, and they're mutex
 cmds = {'-r':'--run', '-b':'--build'}
 # there must always be those 3 args
-args = {'-p':'--processor', '-n':'--numcores', '-s':'--software'}
+args = {'-p':'--processor', '-n':'--numcores', '-s':'--software', '-c':'--condor'}
 # other args, also optional, but they come alone
-xtrs = {'-c':'--clean', '-h':'--help'}
+xtrs = {'-l':'--clean', '-h':'--help'}
 
 # === MAGIC ===
 
@@ -156,8 +160,9 @@ a = []
 # controlled by --run/--build, False if --run, True if --build
 prep = False
 nobuild = False
+# controlled by -pw/--power
 power = False
-# TODO: think the logic to this arg
+# controlled by -c/--condor
 condor = 1
 
 # TODO: TEST \/
@@ -197,7 +202,7 @@ elif len(cmdline) == 4:
        ('--run' in cmdline and '-b' in cmdline):
         help()
         sys.exit(1)
-    if '-b' or '--build' in cmdline:
+    if '-b' in cmdline or '--build' in cmdline:
         prep = True
     for i in cmdline:
         s = i.split('=')
@@ -207,7 +212,7 @@ elif len(cmdline) == 4:
             nproc = s[1]
         elif s[0] == '-s' or s[0] == '--software':
             sw = s[1]
-
+            
 elif len(cmdline) == 5:
     # parsing in order to ensure that there are exclusively opts, cmds and args
     for i in cmdline:
@@ -244,12 +249,14 @@ elif len(cmdline) == 5:
        ('--power' in cmdline and '-nb' in cmdline) :
         help()
         sys.exit(1)
+    # tests for condor and nobuild together
+        
     # it is for sure a valid arg set            
-    if '-b' or '--build' in cmdline:
+    if '-b' in cmdline or '--build' in cmdline:
         prep = True
-    if '-pw' or '--power' in cmdline:
+    if '-pw' in cmdline or '--power' in cmdline:
         power = True
-    if '-nb' or '--nobuild' in cmdline:
+    if '-nb' in cmdline or '--nobuild' in cmdline:
         nobuild = True
     for i in cmdline:
         s = i.split('=')
@@ -259,6 +266,71 @@ elif len(cmdline) == 5:
             nproc = s[1]
         elif s[0] == '-s' or s[0] == '--software':
             sw = s[1]
+        elif s[0] == '-c' or s[0] == '--condor':
+            if not nobuild:
+                condor = s[1]
+            else:
+                help()
+                sys.exit(1)
+                
+elif len(cmdline) == 6:
+    
+    # parsing in order to ensure that there are exclusively opts, cmds and args
+    for i in cmdline:
+        s = i.split('=')
+        if len(s) == 1:
+            if s[0] not in cmds.keys() and s[0] not in cmds.values() \
+               and s[0] not in opts.keys() and s[0] not in opts.values():
+                help()
+                sys.exit(1)
+        elif len(s) == 2:
+            if s[0] not in args.keys() and s[0] not in args.values():
+                help()
+                sys.exit(1)
+        else:
+            help()
+            sys.exit(1)
+    
+    # now we are sure that there are only opts, cmds and args
+    # tests for build and run together
+    if ('-r' in cmdline and '-b' in cmdline) or ('-r' in cmdline and '--build'\
+       in cmdline) or ('--run' in cmdline and '--build' in cmdline) or \
+       ('--run' in cmdline and '-b' in cmdline) :
+        help()
+        sys.exit(1)
+    # tests for build and nobuild together
+    if ('-nb' in cmdline and '-b' in cmdline) or ('-nb' in cmdline and '--build'\
+       in cmdline) or ('--nobuild' in cmdline and '--build' in cmdline) or \
+       ('--nobuild' in cmdline and '-b' in cmdline) :
+        help()
+        sys.exit(1)
+    # tests for power and nobuild together
+    if ('-pw' in cmdline and '-nb' in cmdline) or ('-pw' in cmdline and '--nobuild'\
+       in cmdline) or ('--power' in cmdline and '--nobuild' in cmdline) or \
+       ('--power' in cmdline and '-nb' in cmdline) :
+        help()
+        sys.exit(1)
+    # it is for sure a valid arg set            
+    if '-b' in cmdline or '--build' in cmdline:
+        prep = True
+    if '-pw' in cmdline or '--power' in cmdline:
+        power = True
+    if '-nb' in cmdline or '--nobuild' in cmdline:
+        nobuild = True
+    for i in cmdline:
+        s = i.split('=')
+        if s[0] == '-p' or s[0] == '--processor':
+            proc = s[1]
+        elif s[0] == '-n' or s[0] == '--numcores':
+            nproc = s[1]
+        elif s[0] == '-s' or s[0] == '--software':
+            sw = s[1]
+        elif s[0] == '-c' or s[0] == '--condor':
+            if not nobuild:
+                condor = s[1]
+            else:
+                help()
+                sys.exit(1)
 
 else:
     help()
@@ -269,6 +341,15 @@ if (proc not in procs and proc != "all") or \
    (nproc not in nprocs and nproc != "all") or (sw not in sws and sw != "all"):
     print "Error: invalid argument. Exiting..."
     sys.exit(1)
+
+try:
+    condor = int(condor)
+    if condor < 1:
+        condor = 1
+except:
+    print "Error: invalid argument. Exiting..."
+    sys.exit(1)
+    
 
 # platform make tracker tree creation
 tracker = []
