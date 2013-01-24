@@ -102,6 +102,9 @@ def Get(type, name): # online / I guess I understood it
 ##=====Put=====##
 #Packs a component and copies it to a specific path
 def Put(type, name):
+    if name == None or name == "all":
+        print "Error! Must specify the component!"
+        sys.exit(1)
     Pack(type, name)
     if type != None:
         shutil.copyfile(type + "/" + name + ".acpmpack", put_path + "/" + name + ".acpmpack")
@@ -119,58 +122,64 @@ def Pack(type, name):
     source_files = ""
     component = ""
     if type == None and name == None:
-        # this if is to get ALL the stuff
-        localpath = os.getcwd()
-        # walks in the file system getting each source file
+        # magic
         for x in structure:
-            # note that localpath is kinda the same, but x alters itself on each iteration, being each one of the contents of the list structure
-            # I noticed that the list structure is kinda the base of all this thing
-            mypath = localpath + "/" + x + "/"
-            if os.path.exists(mypath):
-                source_files = source_files + x + "/ "
-        # my hunch is that, in the end, source_files = "platforms/ processors/ ip/ is/ sw/ wrappers/ Makefile"
-        source_files = source_files.split()
-        source_files.append("Makefile")
-        package_file = "all.acpmpack"
-        
-    elif type == None and name != None: # None must be the NULL of python
-        # gets just one component in the "acpm package", like the mips1, or quad_mips
-        component = findLocalComponent(name, structure)
-        if component != None:
-            source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
-            source_files = [source_files]
-            package_file = component.split("/")[-3] + "/" + name + ".acpmpack"
-        else:
-            print "!!! Error: Component " + name + " not found"
-            sys.exit(1) # interesting, might be as same as raise SystemExit --> nope, SystemExit == sys.exit(0)
+            for y in os.listdir(os.getcwd() + "/" + x):
+                Pack(x, y)
     else:
-        # this works just like the elif above
-        lst = []
-        lst.append(type)
+        if type == None and name == "all":
+            # this if is to get ALL the stuff
+            localpath = os.getcwd()
+            # walks in the file system getting each source file
+            for x in structure:
+                # note that localpath is kinda the same, but x alters itself on each iteration, being each one of the contents of the list structure
+                # I noticed that the list structure is kinda the base of all this thing
+                mypath = localpath + "/" + x + "/"
+                if os.path.exists(mypath):
+                    source_files = source_files + x + "/ "
+            # my hunch is that, in the end, source_files = "platforms/ processors/ ip/ is/ sw/ wrappers/ Makefile"
+            source_files = source_files.split()
+            source_files.append("Makefile")
+            package_file = "all.acpmpack"
+        
+        elif type == None and name != None: # None must be the NULL of python
+            # gets just one component in the "acpm package", like the mips1, or quad_mips
+            component = findLocalComponent(name, structure)
+            if component != None:
+                source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
+                source_files = [source_files]
+                package_file = component.split("/")[-3] + "/" + name + ".acpmpack"
+            else:
+                print "!!! Error: Component " + name + " not found"
+                sys.exit(1) # interesting, might be as same as raise SystemExit --> nope, SystemExit == sys.exit(0)
+        else:
+            # this works just like the elif above
+            lst = []
+            lst.append(type)
+            # bulletproof
+            try:
+                component = findLocalComponent(name, lst)
+            except:
+                print "!!! Error: invalid component type."
+                sys.exit(1)
+                
+            if component != None:
+                source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
+                source_files = [source_files]
+                package_file = component.split("/")[-3] + "/" + name + ".acpmpack"
+            else:
+                print "!!! Error: Component " + name + " not found"
+                sys.exit(1)
+    
+        print "Packing " + package_file + "..."
         # bulletproof
         try:
-            component = findLocalComponent(name, lst)
+            utilities = ZipUtilities()
+            utilities.toZip(source_files,package_file)
+            print "Done."
         except:
-            print "!!! Error: invalid component type."
+            print "!!! Error: unable to pack, please try again."
             sys.exit(1)
-            
-        if component != None:
-            source_files = component.split("/")[-3] + "/" + component.split("/")[-2] + "/"
-            source_files = [source_files]
-            package_file = component.split("/")[-3] + "/" + name + ".acpmpack"
-        else:
-            print "!!! Error: Component " + name + " not found"
-            sys.exit(1)
-
-    print "Packing " + package_file + "..."
-    # bulletproof
-    try:
-        utilities = ZipUtilities()
-        utilities.toZip(source_files,package_file)
-        print "Done."
-    except:
-        print "!!! Error: unable to pack, please try again."
-        sys.exit(1)
 
 
 
@@ -299,7 +308,6 @@ def getDescriptionText(path): # I guess I undertood pretty well how this works
 ##=====download=====##
 #This function gets a file in the repo and copy it
 #to the user local path
-# FIXME: add proper try/except block
 def download(source, target, name): # online / I guess I understood it
     # all this can generate exceptions, as being file operations
     webFile = urllib.urlopen(source) # opens the webfile in the local memory (kinda obvious)
@@ -384,6 +392,7 @@ def smartGetRepo():
         return hardcoded_repo_url
 
 ##=====smartGetPutPath=====##
+# TODO: properly document this
 def smartGetPutPath():
     default_path = os.getcwd() + "/put"
     try:
