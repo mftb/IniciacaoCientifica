@@ -100,11 +100,19 @@ def Get(type, name): # online / I guess I understood it
     Unpack(target + fileName)
 
 ##=====Put=====##
-#This function was not implemented.
-def Put(type, name): # online / trivial
-    print "Sorry!! Function not yet implemented."
-    sys.exit(0)
-
+#Packs a component and copies it to a specific path
+def Put(type, name):
+    if not os.path.exists(os.getcwd() + "/put/"):
+        os.mkdir("put")
+    Pack(type, name)
+    if type != None:
+        shutil.copyfile(type + "/" + name + ".acpmpack", "put/" + name + ".acpmpack")
+    else:
+        for x in structure:
+            if os.path.exists(os.getcwd() + "/" + x + "/" + name + ".acpmpack"):
+                shutil.copyfile(x + "/" + name + ".acpmpack", "put/" + name + ".acpmpack")
+    print "Component " + name + " was successfully copied to " + os.getcwd() + "/put/"
+    
 ##=====Pack=====##
 #This function pack the component or platfomrs.
 #It compress all files in a acpmpack file.
