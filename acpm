@@ -60,22 +60,22 @@ def List(): # I guess I understood this
 #if t find, the function dowanload the component package
 #and unpack it.
 #if not, returns error.
-# FIXME: set exception types on first try/except block
-def Get(type, name): # online / I guess I understood it
+# FIXME: set exception Types on first try/except block
+def Get(Type, name): # online / I guess I understood it
     # smart way to do the stuff
-    if type != None:
+    if Type != None:
         lst = []
-        lst.append(type)
+        lst.append(Type)
     else:
         # copies the structure itself, not the reference to it (safer)
         lst = list(structure)
     # bulletproof
     try:
         component = findRepoComponent(name, lst)
-    # FIXME: check this for other errors that aren't a bad component type or web issues
-    # bad component type
+    # FIXME: check this for other errors that aren't a bad component Type or web issues
+    # bad component Type
     except KeyError:
-        print "!!! Error: invalid component type."
+        print "!!! Error: invalid component Type."
         sys.exit(1)
     # if not connected to the web
     except:
@@ -101,15 +101,15 @@ def Get(type, name): # online / I guess I understood it
 
 ##=====Put=====##
 #Packs a component and copies it to a specific path
-def Put(type, name):
+def Put(Type, name):
     if name == None or name == "all":
         print "Error! Must specify the component!"
         sys.exit(1)
-    Pack(type, name)
-    if type != None:
-        if not os.path.exists(put_path + "/" + type):
-                    os.mkdir(put_path + "/" + type)
-        shutil.copyfile(type + "/" + name + ".acpmpack", put_path + "/" + type + "/" + name + ".acpmpack")
+    Pack(Type, name)
+    if Type != None:
+        if not os.path.exists(put_path + "/" + Type):
+                    os.mkdir(put_path + "/" + Type)
+        shutil.copyfile(Type + "/" + name + ".acpmpack", put_path + "/" + Type + "/" + name + ".acpmpack")
     else:
         for x in structure:
             if os.path.exists(os.getcwd() + "/" + x + "/" + name + ".acpmpack"):
@@ -121,17 +121,17 @@ def Put(type, name):
 ##=====Pack=====##
 #This function pack the component or platfomrs.
 #It compress all files in a acpmpack file.
-def Pack(type, name):
+def Pack(Type, name):
     # my initial hunch is that this function gets all the components you have on your acpm local package
     source_files = ""
     component = ""
-    if type == None and name == None:
+    if Type == None and name == None:
         # magic
         for x in structure:
             for y in os.listdir(os.getcwd() + "/" + x):
                 Pack(x, y)
     else:
-        if type == None and name == "all":
+        if Type == None and name == "all":
             # this if is to get ALL the stuff
             localpath = os.getcwd()
             # walks in the file system getting each source file
@@ -146,7 +146,7 @@ def Pack(type, name):
             source_files.append("Makefile")
             package_file = "all.acpmpack"
         
-        elif type == None and name != None: # None must be the NULL of python
+        elif Type == None and name != None: # None must be the NULL of python
             # gets just one component in the "acpm package", like the mips1, or quad_mips
             component = findLocalComponent(name, structure)
             if component != None:
@@ -159,12 +159,12 @@ def Pack(type, name):
         else:
             # this works just like the elif above
             lst = []
-            lst.append(type)
+            lst.append(Type)
             # bulletproof
             try:
                 component = findLocalComponent(name, lst)
             except:
-                print "!!! Error: invalid component type."
+                print "!!! Error: invalid component Type."
                 sys.exit(1)
                 
             if component != None:
@@ -212,30 +212,30 @@ def Unpack(package): # I guess I understood this
 #if exist a local copy of the template component
 #the functions copy it with the new name,
 #if not, the function try to get in the repo.
-def Create(type, name): # calls get, so this is online / I guess I understood how this works - at least from the inside - but the result isn't obvious to me
+def Create(Type, name): # calls get, so this is online / I guess I understood how this works - at least from the inside - but the result isn't obvious to me
     # might need online testing
     # there is a need to already be a template in the local repo, otherwise, it will search it online
     # so, the template is a dir tree?
     list = []
-    list.append(type) # there is a REAL need here for the type
+    list.append(Type) # there is a REAL need here for the Type
     # bulletproof
     try:
         component = findLocalComponent("template", list)
         print component
     except:
-        print "!!! Error: invalid component type."
+        print "!!! Error: invalid component Type."
         sys.exit(1)
     if component != None:
-        target = os.getcwd() + "/" + type + "/"
+        target = os.getcwd() + "/" + Type + "/"
         try:
             # my guess is this copies the whole filesystem tree under component to target + name (sorry for the kinda obvious stuff)
             shutil.copytree(component, target + name)
         except:
-            print "!!! Error: Component template of " + type + " not found"
+            print "!!! Error: Component template of " + Type + " not found"
             sys.exit(1)
     else:
         # here is where it will look for the template so it can be downloaded and unpacked in the local repo
-        Get(type, "template")
+        Get(Type, "template")
 
 
 ##=====Start=====##
@@ -527,18 +527,18 @@ execline.extend(cmdline[1:]);
 action = execline[0]
 # execline:
 # [0]: action
-# [1]: type
+# [1]: Type
 # [2]: name
 
 if len(execline) != 1:
     if len(execline) == 2:
-        type = None
+        Type = None
         name = execline[1]
     else:
-        type = execline[1]
+        Type = execline[1]
         name = execline[2]
 else:
-        type = None
+        Type = None
         name = None
         
 
@@ -550,19 +550,19 @@ elif action == "list":
     List()
 
 elif action == "get":
-    Get(type, name)
+    Get(Type, name)
 
 elif action == "put":
-    Put(type, name)
+    Put(Type, name)
 
 elif action == "pack":
-    Pack(type, name)
+    Pack(Type, name)
 
 elif action == "unpack":
     Unpack(name)
 
 elif action == "create":
-    Create(type, name)
+    Create(Type, name)
 
 elif action == "repo":
     Repo()
