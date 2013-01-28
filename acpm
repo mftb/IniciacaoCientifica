@@ -107,11 +107,15 @@ def Put(type, name):
         sys.exit(1)
     Pack(type, name)
     if type != None:
-        shutil.copyfile(type + "/" + name + ".acpmpack", put_path + "/" + name + ".acpmpack")
+        if not os.path.exists(put_path + "/" + type):
+                    os.mkdir(put_path + "/" + type)
+        shutil.copyfile(type + "/" + name + ".acpmpack", put_path + "/" + type + "/" + name + ".acpmpack")
     else:
         for x in structure:
             if os.path.exists(os.getcwd() + "/" + x + "/" + name + ".acpmpack"):
-                shutil.copyfile(x + "/" + name + ".acpmpack", put_path + "/" + name + ".acpmpack")
+                if not os.path.exists(put_path + "/" + x):
+                    os.mkdir(put_path + "/" + x)
+                shutil.copyfile(x + "/" + name + ".acpmpack", put_path + "/" + x + "/" + name + ".acpmpack")
     print "Component " + name + " was successfully copied to " + put_path
     
 ##=====Pack=====##
