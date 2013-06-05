@@ -102,6 +102,8 @@ def Get(Type, name): # online / I guess I understood it
 ##=====Put=====##
 #Packs a component and copies it to a specific path
 def Put(Type, name):
+    if not os.path.exists(put_path):
+        os.mkdir(put_path)
     if name == None or name == "all":
         print "Error! Must specify the component!"
         sys.exit(1)
