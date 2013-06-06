@@ -289,7 +289,7 @@ def Help(): # trivial
   -l,  --list                list
   -lr, --listrepo            listrepo
   -pa, --pack                pack
-  -up, --put                 put
+  -pu, --put                 put
   -r,  --repo                repo
   -s,  --start               start
   -u,  --unpack              unpack
