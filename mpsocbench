@@ -186,18 +186,28 @@ def makefile(proc, nproc, sw, power, intercon, plat_rundir):
 
 # prints usage
 def help():
-    print "Usage: ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software>"
-    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software>"
+    print "Usage: ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-nb|--nobuild]"
     print ""
-    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
-    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power]"
-    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-c|--condor]=<queue>"
-    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-c|--condor]=<queue>"
-    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power] [-c|--condor]=<queue>"
-    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-pw|--power] [-c|--condor]=<queue>"
-    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-nb|--nobuild]"
+    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power]"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power]"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power] [-nb|--nobuild]"
+    print ""
+    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-c|--condor]=<queue>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-c|--condor]=<queue>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-c|--condor]=<queue> [-nb|--nobuild]"
+    print ""
+    print "       ./mpsocbench [-b|--build] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power] [-c|--condor]=<queue>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power] [-c|--condor]=<queue>"
+    print "       ./mpsocbench [-r|--run] [-p|--processor]=<processor> [-n|--numcores]=<number_of_cores> [-s|--sofware]=<software> [-i|--interconnection]=<interconnection> [-pw|--power] [-c|--condor]=<queue> [-nb|--nobuild]"
+    print ""
+    print "       ./mpsocbench [-b|--build] [-n|--numcores]=<number_of_cores> [-i|--interconnection]=<interconnection> [-ht|--heterogen]"
+    print "       ./mpsocbench [-r|--build] [-n|--numcores]=<number_of_cores> [-i|--interconnection]=<interconnection> [-ht|--heterogen]"
+    print "       ./mpsocbench [-r|--build] [-n|--numcores]=<number_of_cores> [-i|--interconnection]=<interconnection> [-ht|--heterogen] [-nb|--nobuild]"
     print ""
     print "       ./mpsocbench [-l|--clean]"
+    print "       ./mpsocbench [-d|--distclean]"
     print "       ./mpsocbench [-h|--help]"
 
 # rundir Makefile creator
@@ -221,72 +231,86 @@ def condor_task(path, proc, nproc, sw, queue, intercon):
     f.close()
 
 # rundir creation
-def build(tracker, power, condor, intercon):
+def build(tracker, power, condor):
+    # cleans up the processors
+    distclean()
     path = ""
     try:
         # walks the platform tracker make tree
+        # processors
         for i in tracker[0]:
+            # number of cores
             for j in tracker[1]:
+                # softwares
                 for k in tracker[2]:
-                    os.system("rm Makefile")
-                    # creates general Makefile
-                    if power:
-                        plat_rundir = i + "." + intercon + ".pw." + j + "." + k
-                    else:
-                        plat_rundir = i + "." + intercon + "." + j + "." + k
-                    f = open("Makefile", "w")
-                    if i == 'arm' or i == 'powerpc' and power:
-                        print "WARNING! The selected processor does not support PowerSC!"
-                        plat_rundir = i + "." + intercon + "." + j + "." + k
-                        f.write(makefile(i, j, k, False, intercon, plat_rundir))
-                    else:
-                        f.write(makefile(i, j, k, power, intercon, plat_rundir))
-                    f.close()
-                    # makes the platform
-                    os.system("make clean all")
-                    path = "rundir/" + plat_rundir
-                    print "Creating rundir for " + path[7:] + "..."
-                    # creates rundir for each platform
-                    os.system("mkdir -p " + path)
-                    # copies it to its rundir                    
-                    os.system("make copy")
-                    # creates rundir makefile
-                    run_make(path, i, j, k, intercon)
-                    # creates condor task file in the rundir
-                    if condor > 0:
-                        condor_task(path, i, j, k, condor, intercon)
-    except:
+                    # interconnections
+                    for l in tracker[3]:
+                        if not valid_platform[k][j]:
+                            print "Warning: invalid platform. Skipping..."
+                        else:
+                            os.system("rm Makefile")
+                            # creates general Makefile
+                            if power:
+                                plat_rundir = i + "." + l + ".pw." + j + "." + k
+                            else:
+                                plat_rundir = i + "." + l + "." + j + "." + k
+                            f = open("Makefile", "w")
+                            if i == 'arm' or i == 'powerpc' and power:
+                                print "WARNING! The selected processor does not support PowerSC!"
+                                plat_rundir = i + "." + l + "." + j + "." + k
+                                f.write(makefile(i, j, k, False, l, plat_rundir))
+                            else:
+                                f.write(makefile(i, j, k, power, l, plat_rundir))
+                            f.close()
+                            # makes the platform
+                            os.system("make clean all")
+                            path = "rundir/" + plat_rundir
+                            print "Creating rundir for " + path[7:] + "..."
+                            # creates rundir for each platform
+                            os.system("mkdir -p " + path)
+                            # copies it to its rundir                    
+                            os.system("make copy")
+                            # creates rundir makefile
+                            run_make(path, i, j, k, l)
+                            # creates condor task file in the rundir
+                            if condor > 0:
+                                condor_task(path, i, j, k, condor, l)
+    except Exception as e:
         print "Error! Exiting..."
+        print type(e)
         sys.exit(1)
 
 # platform run
-def run(tracker, nobuild, power, condor, intercon):
+def run(tracker, nobuild, power, condor):
     try:
         # walks the platform tracker make tree
+        # processors
         for i in tracker[0]:
+            # number of cores
             for j in tracker[1]:
+                # softwares
                 for k in tracker[2]:
-                    if power:
-                        rundir_path = "rundir/" + i + "." + intercon + ".pw." + j + "." + k
-                    else:
-                        rundir_path = "rundir/" + i + "." + intercon + "." + j + "." + k
-                    if i == 'arm' or i == 'powerpc' and power:
-                        print "WARNING! The selected processor does not support PowerSC!"
-                        rundir_path = "rundir/" + i + "." + intercon + "." + j + "." + k
-                    # tests if rundir exists
-                    if not os.path.isdir(rundir_path):
-                        # prints warning
-                        print "WARNING! " + rundir_path + " doesn't exists!"
-                        if not nobuild:
-                            # creates rundir
-                            build([[i],[j],[k]], power, condor, intercon)
+                    # interconnections
+                    for l in tracker[3]:
+                        if power:
+                            rundir_path = "rundir/" + i + "." + l + ".pw." + j + "." + k
+                        else:
+                            rundir_path = "rundir/" + i + "." + l + "." + j + "." + k
+                        if i == 'arm' or i == 'powerpc' and power:
+                            print "WARNING! The selected processor does not support PowerSC!"
+                            rundir_path = "rundir/" + i + "." + l + "." + j + "." + k
+                        # tests if rundir exists
+                        if not os.path.isdir(rundir_path):
+                            if not nobuild:
+                                # creates rundir
+                                build([[i],[j],[k],[l]], power, condor)
+                                os.chdir(rundir_path)
+                                os.system("make run")
+                                os.chdir("../../")
+                        else:
                             os.chdir(rundir_path)
                             os.system("make run")
                             os.chdir("../../")
-                    else:
-                        os.chdir(rundir_path)
-                        os.system("make run")
-                        os.chdir("../../")
     except:
         print "Error! Exiting..."
         sys.exit(1)
@@ -445,19 +469,16 @@ if '-c' in args.keys():
 
 
 if sw != "" and proc != "":
-    if proc not in procs:
+    if (proc not in procs) and (proc != 'all'):
         print "Error: invalid argument. Exiting..."
         sys.exit(1)
-    if nproc not in nprocs:
+    if (nproc not in nprocs) and (nproc != 'all'):
         print "Error: invalid argument. Exiting..."
         sys.exit(1)
-    if sw not in sws:
+    if (sw not in sws) and (sw != 'all'):
         print "Error: invalid argument. Exiting..."
         sys.exit(1)
-    if intercon not in intercons:
-        print "Error: invalid argument. Exiting..."
-        sys.exit(1)   
-    if not valid_platform[sw][nproc]:
+    if (intercon not in intercons) and (intercon != 'all'):
         print "Error: invalid argument. Exiting..."
         sys.exit(1)
 
@@ -469,7 +490,6 @@ try:
 except:
     print "Error: invalid argument. Exiting..."
     sys.exit(1)
-    
 
 # platform make tracker tree creation
 tracker = []
@@ -485,16 +505,19 @@ else:
         tracker.append(nprocs)
     else:
         tracker.append([nproc])
-    if sw != "":
-        if sw == "all":
-            tracker.append(sws)
-        else:
-            tracker.append([sw])
+    if sw == "all":
+       tracker.append(sws)
+    else:
+       tracker.append([sw])
+    if intercon == "all":
+        tracker.append(intercons)
+    else:
+        tracker.append([intercon])
 
-rundir_path = ""
+print tracker
 
 if prep:
-    build(tracker, power, condor, intercon)
+    build(tracker, power, condor)
 else:
-    run(tracker, nobuild, power, condor, intercon)
+    run(tracker, nobuild, power, condor)
 
