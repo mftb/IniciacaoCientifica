@@ -263,7 +263,7 @@ def build(tracker, power, condor):
                                 f.write(makefile(i, j, k, power, l, plat_rundir))
                             f.close()
                             # makes the platform
-                            os.system("make clean all")
+                            os.system("make clean distclean all")
                             path = "rundir/" + plat_rundir
                             print "Creating rundir for " + path[7:] + "..."
                             # creates rundir for each platform
@@ -277,7 +277,6 @@ def build(tracker, power, condor):
                                 condor_task(path, i, j, k, condor, l)
     except Exception as e:
         print "Error! Exiting..."
-        print type(e)
         sys.exit(1)
 
 # platform run
